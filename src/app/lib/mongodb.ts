@@ -7,17 +7,13 @@ if (!uri) {
 }
 
 const options = {
-  tls: true,               // enforce SSL/TLS
-  useUnifiedTopology: true // recommended
+  tls: true, // secure connection
 };
-
 
 let client: MongoClient;
 let clientPromise: Promise<MongoClient>;
 
 declare global {
-  // para sa dev, hindi mag-multiple connection
-  // eslint-disable-next-line no-var
   var _mongoClientPromise: Promise<MongoClient>;
 }
 
@@ -33,14 +29,8 @@ if (process.env.NODE_ENV === "development") {
 }
 
 export async function connectToDB(): Promise<Db> {
-  try {
-    const client = await clientPromise;
-    return client.db("kanbanDB"); // make sure DB name matches your Atlas DB
-  } catch (err) {
-    console.error("Error connecting to MongoDB:", err);
-    throw err;
-  }
+  const client = await clientPromise;
+  return client.db("kanbanDB");
 }
-
 
 export default clientPromise;
