@@ -6,17 +6,9 @@ import { v4 as uuidv4 } from "uuid";
 import EstimatedCompletionModal from "./EstimatedCompletionModal";
 import { getCurrentUser, logout } from "../lib/clientAuth";
 import PopupMessage from "./PopupMessage";
+import EditTaskModal from "./EditTaskModal";
+import { Task } from "../interface/types";
 
-interface Task {
-  id: string;
-  content: string;
-  createdAt: string;
-  inProgressAt?: string;
-  doneAt?: string;
-  username: string;
-  estimatedCompletion?: string;
-  column: "todo" | "inprogress" | "done";
-}
 
 interface Column {
   id: "todo" | "inprogress" | "done";
@@ -41,6 +33,9 @@ export default function KanbanBoard() {
   const [username, setUsername] = useState<string | null>(null);
   const [userFilter, setUserFilter] = useState<string>(""); // "" = All Users
   const [popup, setPopup] = useState<{message: string, type?: "error" | "success" | "info"} | null>(null);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
+
 
 useEffect(() => {
   const init = async () => {
@@ -303,6 +298,18 @@ const handleCancelEstimatedCompletion = () => {
   setCurrentDestColumnId(null);
 };
 
+  const handleEditTask = (task: Task) => {
+    setTaskToEdit(task);
+    setEditModalOpen(true);
+  };
+
+  const handleSaveEditedTask = (updatedTask: Task) => {
+    const updatedAllTasks = allTasks.map(t => t.id === updatedTask.id ? updatedTask : t);
+    setAllTasks(updatedAllTasks);
+    filterTasks(updatedAllTasks, userFilter || undefined);
+    updateTaskInDB(updatedTask);
+    setEditModalOpen(false);
+  };
 
 
   return (
@@ -384,7 +391,7 @@ const handleCancelEstimatedCompletion = () => {
                       {p => (
                         <div ref={p.innerRef} {...p.draggableProps} {...p.dragHandleProps} style={{ ...styles.card, ...p.draggableProps.style }}>
                           <div style={styles.cardHeader}>
-                            <b>{task.content}</b>
+                            <b onClick={() => handleEditTask(task)} style={{ cursor: "pointer" }}>{task.content}</b>
                             <span>{task.username}</span>
                             <button onClick={() => handleDeleteTask(col.id, task.id)} style={styles.deleteBtn}>❌</button>
                           </div>
@@ -409,6 +416,14 @@ const handleCancelEstimatedCompletion = () => {
         isOpen={modalOpen}
         onClose={handleCancelEstimatedCompletion}
         onSave={handleSaveEstimatedCompletion}
+      />
+
+      <EditTaskModal
+        isOpen={editModalOpen}
+        task={taskToEdit}
+        allUsers={Array.from(new Set(allTasks.map(t => t.username)))}
+        onClose={() => setEditModalOpen(false)}
+        onSave={handleSaveEditedTask}
       />
     </div>
   );

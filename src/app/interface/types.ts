@@ -1,10 +1,10 @@
-import { ObjectId } from "mongodb";
-
 export interface Task {
-  _id?: ObjectId;
-  title: string;
-  description?: string;
-  status: "todo" | "in-progress" | "done";
-  createdAt?: Date;
-  updatedAt?: Date;
+  id: string;
+  content: string;
+  createdAt: string;
+  inProgressAt?: string;
+  doneAt?: string;
+  username: string;
+  estimatedCompletion?: string;
+  column: "todo" | "inprogress" | "done";
 }
