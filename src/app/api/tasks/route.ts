@@ -1,4 +1,5 @@
-export const dynamic = "force-dynamic"; // important for dynamic routes
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/app/lib/mongodb";
@@ -8,11 +9,20 @@ export async function GET() {
   try {
     const client = await clientPromise;
     const db = client.db("kanbanDB");
-    const tasks = await db.collection("tasks").find({}).toArray();
+
+    const tasks = await db
+      .collection("tasks")
+      .find({})
+      .sort({ createdAt: -1 })
+      .toArray();
+
     return NextResponse.json(tasks);
   } catch (err) {
     console.error("GET /api/tasks error:", err);
-    return NextResponse.json({ message: "Server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to fetch tasks" },
+      { status: 500 }
+    );
   }
 }
 
@@ -20,48 +30,70 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const task = await req.json();
-    if (!task || !task.id) {
-      return NextResponse.json({ message: "Invalid task data" }, { status: 400 });
+
+    if (!task || !task.id || !task.title) {
+      return NextResponse.json(
+        { error: "Invalid task data" },
+        { status: 400 }
+      );
     }
 
     const client = await clientPromise;
     const db = client.db("kanbanDB");
 
-    await db.collection("tasks").insertOne(task);
-    return NextResponse.json({ message: "Task added!" });
+    const newTask = {
+      ...task,
+      createdAt: new Date(),
+    };
+
+    await db.collection("tasks").insertOne(newTask);
+
+    return NextResponse.json(newTask, { status: 201 });
   } catch (err) {
     console.error("POST /api/tasks error:", err);
-    return NextResponse.json({ message: "Server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to add task" },
+      { status: 500 }
+    );
   }
 }
 
-// PUT (update) task
+// PUT update task
 export async function PUT(req: NextRequest) {
   try {
     const { id, updates } = await req.json();
+
     if (!id || !updates) {
-      return NextResponse.json({ message: "Invalid request" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid update data" },
+        { status: 400 }
+      );
     }
 
     const client = await clientPromise;
     const db = client.db("kanbanDB");
 
-    // Remove _id if it exists in updates
     const { _id, ...safeUpdates } = updates;
 
     const result = await db.collection("tasks").updateOne(
-      { id },          // filter by custom task id
-      { $set: safeUpdates } // only safe fields
+      { id },
+      { $set: safeUpdates }
     );
 
     if (result.matchedCount === 0) {
-      return NextResponse.json({ message: "Task not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Task not found" },
+        { status: 404 }
+      );
     }
 
-    return NextResponse.json({ message: "Task updated!" });
+    return NextResponse.json({ success: true });
   } catch (err) {
     console.error("PUT /api/tasks error:", err);
-    return NextResponse.json({ message: "Server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to update task" },
+      { status: 500 }
+    );
   }
 }
 
@@ -69,8 +101,12 @@ export async function PUT(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   try {
     const { id } = await req.json();
+
     if (!id) {
-      return NextResponse.json({ message: "Invalid request" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid delete request" },
+        { status: 400 }
+      );
     }
 
     const client = await clientPromise;
@@ -79,12 +115,18 @@ export async function DELETE(req: NextRequest) {
     const result = await db.collection("tasks").deleteOne({ id });
 
     if (result.deletedCount === 0) {
-      return NextResponse.json({ message: "Task not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Task not found" },
+        { status: 404 }
+      );
     }
 
-    return NextResponse.json({ message: "Task deleted!" });
+    return NextResponse.json({ success: true });
   } catch (err) {
     console.error("DELETE /api/tasks error:", err);
-    return NextResponse.json({ message: "Server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to delete task" },
+      { status: 500 }
+    );
   }
 }
