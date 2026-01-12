@@ -55,13 +55,14 @@ useEffect(() => {
     const tasks: Task[] = await res.json();
     setAllTasks(tasks);
 
-    // 🔹 DEFAULT: show only current user's tasks
-    setUserFilter(user);
-    filterTasks(tasks, user);
+    // 🔹 Show ALL tasks by default
+    setUserFilter("");          // <- empty = all users
+    filterTasks(tasks, "");     // <- no filter
   };
 
   init();
 }, []);
+
 
 // useEffect(() => {
 //   const init = async () => {
