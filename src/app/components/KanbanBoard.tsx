@@ -55,7 +55,7 @@ useEffect(() => {
     const tasks: Task[] = await res.json();
     setAllTasks(tasks);
 
-    // 🔹 Default: show only current user's tasks
+    // 🔹 DEFAULT: show only current user's tasks
     setUserFilter(user);
     filterTasks(tasks, user);
   };
@@ -63,9 +63,32 @@ useEffect(() => {
   init();
 }, []);
 
+// useEffect(() => {
+//   const init = async () => {
+//     const user = await getCurrentUser();
+//     if (!user) {
+//       window.location.href = "/";
+//       return;
+//     }
+//     setUsername(user);
+
+//     const res = await fetch("/api/tasks");
+//     const tasks: Task[] = await res.json();
+//     setAllTasks(tasks);
+
+//     // 🔹 Default: show only current user's tasks
+//     setUserFilter(user);
+//     filterTasks(tasks, user);
+//   };
+
+//   init();
+// }, []);
 
   const filterTasks = (tasks: Task[], filterUser?: string) => {
-    const filtered = filterUser ? tasks.filter(t => t.username === filterUser) : [...tasks];
+    // kung empty string o undefined → all tasks
+    const filtered = filterUser && filterUser !== "" 
+      ? tasks.filter(t => t.username === filterUser)
+      : [...tasks];
 
     const newColumns: Record<Column["id"], Column> = {
       todo: { ...initialData.todo, tasks: [] },
@@ -79,6 +102,22 @@ useEffect(() => {
 
     setColumns(newColumns);
   };
+
+  // const filterTasks = (tasks: Task[], filterUser?: string) => {
+  //   const filtered = filterUser ? tasks.filter(t => t.username === filterUser) : [...tasks];
+
+  //   const newColumns: Record<Column["id"], Column> = {
+  //     todo: { ...initialData.todo, tasks: [] },
+  //     inprogress: { ...initialData.inprogress, tasks: [] },
+  //     done: { ...initialData.done, tasks: [] },
+  //   };
+
+  //   filtered.forEach(t => {
+  //     newColumns[t.column].tasks.push(t);
+  //   });
+
+  //   setColumns(newColumns);
+  // };
 
   const handleUserFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
@@ -291,6 +330,16 @@ const handleCancelEstimatedCompletion = () => {
         </div>
       </header>
 
+      {/* <div style={styles.filterContainer}>
+        <label>Filter by user:</label>
+        <select value={userFilter} onChange={handleUserFilterChange} style={styles.userSelect}>
+          <option value="">All Users</option>
+          {Array.from(new Set(allTasks.map(t => t.username))).map(u => (
+            <option key={u} value={u}>{u}</option>
+          ))}
+        </select>
+      </div> */}
+
       <div style={styles.filterContainer}>
         <label>Filter by user:</label>
         <select value={userFilter} onChange={handleUserFilterChange} style={styles.userSelect}>
@@ -300,6 +349,7 @@ const handleCancelEstimatedCompletion = () => {
           ))}
         </select>
       </div>
+
 
       {/* 🔹 Export CSV Button */}
       <div style={{ marginTop: 12 }}>
