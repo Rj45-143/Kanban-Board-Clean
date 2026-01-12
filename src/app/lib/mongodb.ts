@@ -6,7 +6,11 @@ if (!uri) {
   throw new Error("Please add your Mongo URI to .env.local");
 }
 
-const options = {};
+const options = {
+  tls: true,               // enforce SSL/TLS
+  useUnifiedTopology: true // recommended
+};
+
 
 let client: MongoClient;
 let clientPromise: Promise<MongoClient>;
@@ -29,8 +33,14 @@ if (process.env.NODE_ENV === "development") {
 }
 
 export async function connectToDB(): Promise<Db> {
-  const client = await clientPromise;
-  return client.db("kanbanDB"); // pangalan ng DB mo
+  try {
+    const client = await clientPromise;
+    return client.db("kanbanDB"); // make sure DB name matches your Atlas DB
+  } catch (err) {
+    console.error("Error connecting to MongoDB:", err);
+    throw err;
+  }
 }
+
 
 export default clientPromise;
