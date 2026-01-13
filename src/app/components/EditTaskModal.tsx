@@ -15,23 +15,34 @@ export default function EditTaskModal({ isOpen, task, allUsers, onClose, onSave 
   const [content, setContent] = useState("");
   const [username, setUsername] = useState("");
   const [estimatedCompletion, setEstimatedCompletion] = useState("");
+  const [createdAt, setCreatedAt] = useState(""); // 🔹 new state
 
   useEffect(() => {
     if (task) {
       setContent(task.content);
       setUsername(task.username);
       setEstimatedCompletion(task.estimatedCompletion || "");
+
+      // convert ISO string to input[type=datetime-local] format
+      setCreatedAt(task.createdAt ? task.createdAt.slice(0, 16) : "");
     }
   }, [task]);
 
   if (!isOpen || !task) return null;
 
   const handleSave = () => {
-    if (!content.trim() || !username) {
-      alert("Task content and owner cannot be empty!");
+    if (!content.trim() || !username || !createdAt) {
+      alert("Task content, owner, and Created date cannot be empty!");
       return;
     }
-    onSave({ ...task, content, username, estimatedCompletion });
+
+    onSave({
+      ...task,
+      content,
+      username,
+      estimatedCompletion,
+      createdAt: new Date(createdAt).toISOString(), // 🔹 save back to ISO
+    });
   };
 
   return (
@@ -61,12 +72,28 @@ export default function EditTaskModal({ isOpen, task, allUsers, onClose, onSave 
         </div>
 
         <div style={styles.field}>
+          <label style={styles.label}>Created Date:</label>
+          <input
+            type="datetime-local"
+            value={createdAt}
+            onChange={e => setCreatedAt(e.target.value)}
+            style={styles.input}
+          />
+        </div>
+
+        <div style={styles.field}>
           <label style={styles.label}>Estimated Completion:</label>
           <input
             type="date"
             value={estimatedCompletion}
             onChange={e => setEstimatedCompletion(e.target.value)}
-            style={styles.input}
+            style={{
+              ...styles.input,
+              backgroundColor: task?.column === "inprogress" ? "#fff" : "#f1f5f9",
+              cursor: task?.column === "inprogress" ? "pointer" : "not-allowed"
+            }}
+            disabled={task?.column !== "inprogress"} // 🔹 disabled if not In Progress
+            placeholder={task?.column === "inprogress" ? "Select target date" : "Move to In Progress to set"}
           />
         </div>
 

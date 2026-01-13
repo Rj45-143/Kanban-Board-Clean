@@ -6,3 +6,33 @@ body {
   font-family: system-ui, sans-serif;
   background: #f9f9f9;
 }
+
+/* 🔹 Flatpickr modern small calendar */
+.flatpickr-calendar {
+  font-size: 12px;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  transform: scale(0.85);
+  transform-origin: top left;
+}
+
+.flatpickr-day {
+  border-radius: 6px;
+}
+
+.flatpickr-day.selected {
+  background: #6366f1;
+  border-color: #6366f1;
+}
+
+.flatpickr-day.today {
+  border-color: #6366f1;
+}
+
+.flatpickr-months {
+  padding: 6px 0;
+}
+
+.flatpickr-weekdays {
+  font-size: 11px;
+}

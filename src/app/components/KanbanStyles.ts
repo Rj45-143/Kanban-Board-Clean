@@ -1,270 +1,390 @@
 import { CSSProperties } from "react";
 
 export const styles: Record<string, CSSProperties> = {
-  page: { minHeight: "100vh", padding: 20, background: "#f0f4f8" },
+    page: {
+        backgroundColor: "#f3f4f6", // light gray background
+        minHeight: "100vh",
+        padding: 16,
+    },
 
-  header: {
-    maxWidth: 1200,
-    margin: "0 auto 20px",
-    display: "flex",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: 12
-  },
+    header: {
+        maxWidth: 1200,
+        margin: "0 auto 20px",
+        display: "flex",
+        flexWrap: "wrap",
+        justifyContent: "space-between",
+        alignItems: "center",
+        gap: 12
+    },
 
-  headerLeft: {
-    display: "flex",
-    flexDirection: "column",
-    gap: 8
-  },
+    headerLeft: {
+        display: "flex",
+        flexDirection: "column",
+        gap: 8
+    },
 
-  title: { fontSize: 32, fontWeight: 700, color: "#1e3a8a" },
+    title: { fontSize: 32, fontWeight: 700, color: "#1e3a8a" },
 
-  filterUnderTitle: {
-    display: "flex",
-    alignItems: "center",
-    gap: 8,
-    flexWrap: "wrap"
-  },
+    filterUnderTitle: {
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        flexWrap: "wrap"
+    },
 
-  headerRight: {
-    display: "flex",
-    gap: 12,
-    alignItems: "center",
-    flexWrap: "wrap"
-  },
+    headerRight: {
+        display: "flex",
+        gap: 12,
+        alignItems: "center",
+        flexWrap: "wrap"
+    },
 
-  logoutBtn: {
-    background: "#ef4444",
-    color: "#fff",
-    border: "none",
-    padding: "8px 14px",
-    borderRadius: 8,
-    cursor: "pointer"
-  },
+    logoutBtn: {
+        background: "#ef4444",
+        color: "#fff",
+        border: "none",
+        padding: "8px 14px",
+        borderRadius: 8,
+        cursor: "pointer"
+    },
 
-  /* ACTION ROW */
-  actionRow: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: 12,
-    flexWrap: "wrap",
-    maxWidth: 1200,
-    margin: "0 auto 20px"
-  },
+    /* ACTION ROW */
+    actionRow: {
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        gap: 12,
+        flexWrap: "wrap",
+        maxWidth: 1200,
+        margin: "0 auto 20px"
+    },
 
-  addTask: {
-    display: "flex",
-    gap: 12,
-    flex: 1,
-    minWidth: 260,
-    flexWrap: "wrap"
-  },
+    addTask: {
+        display: "flex",
+        gap: 12,
+        flex: 1,
+        minWidth: 260,
+        flexWrap: "wrap"
+    },
 
-  input: {
-    flex: 1,
-    minWidth: 180,
-    padding: 10,
-    borderRadius: 6,
-    border: "1px solid #cbd5e1"
-  },
+    input: {
+        flex: 1,
+        minWidth: 180,
+        padding: 10,
+        borderRadius: 6,
+        border: "1px solid #cbd5e1"
+    },
 
-  primaryBtn: {
-    background: "#3b82f6",
-    color: "#fff",
-    padding: "10px 16px",
-    borderRadius: 6,
-    border: "none",
-    cursor: "pointer"
-  },
+    primaryBtn: {
+        background: "#3b82f6",
+        color: "#fff",
+        padding: "10px 16px",
+        borderRadius: 6,
+        border: "none",
+        cursor: "pointer"
+    },
 
-  csvBtn: {
-    background: "green",
-    color: "#fff",
-    padding: "10px 16px",
-    borderRadius: 6,
-    border: "none",
-    cursor: "pointer",
-    whiteSpace: "nowrap"
-  },
+    csvBtn: {
+        background: "green",
+        color: "#fff",
+        padding: "10px 16px",
+        borderRadius: 6,
+        border: "none",
+        cursor: "pointer",
+        whiteSpace: "nowrap"
+    },
 
-  /* FILTER */
-  userSelect: {
-    padding: "6px 30px 6px 10px",
-    borderRadius: 6,
-    border: "1px solid #cbd5e1",
-    appearance: "none",
-    background:
-      "url('data:image/svg+xml;utf8,<svg fill=\"%23007bff\" height=\"12\" viewBox=\"0 0 24 24\" width=\"12\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M7 10l5 5 5-5z\"/></svg>') no-repeat right 8px center",
-    backgroundColor: "#fff",
-    cursor: "pointer"
-  },
+    /* FILTER */
+    userSelect: {
+        padding: "6px 30px 6px 10px",
+        borderRadius: 6,
+        border: "1px solid #cbd5e1",
+        appearance: "none",
+        background:
+            "url('data:image/svg+xml;utf8,<svg fill=\"%23007bff\" height=\"12\" viewBox=\"0 0 24 24\" width=\"12\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M7 10l5 5 5-5z\"/></svg>') no-repeat right 8px center",
+        backgroundColor: "#fff",
+        cursor: "pointer"
+    },
 
-  /* BOARD */
-  board: {
-    display: "flex",
-    gap: 24,
-    justifyContent: "center",
-    width: "100%",
-    overflowX: "auto"
-  },
+    /* BOARD */
+    boardWrapper: {
+        width: "100%",
+        overflowX: "auto",
+        backgroundColor: "#f3f4f6", // page background
+        padding: "16px 0"
+    },
 
-  column: {
-    background: "#fff",
-    padding: 16,
-    borderRadius: 12,
-    minWidth: 280,
-    flex: "0 0 auto"
-  },
-
-  columnTitle: {
-    textAlign: "center",
-    fontWeight: 600,
-    color: "#1e40af",
-    marginBottom: 12
-  },
-
-  /* CARD */
-  card: {
-    background: "#f8fafc",
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 12,
-    boxShadow: "0 2px 6px rgba(0,0,0,0.08)"
-  },
-
-  cardHeader: {
-    display: "grid",
-    gridTemplateColumns: "1fr",
-    rowGap: 6,
-    marginBottom: 6
-  },
+    board: {
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+        gap: 16,
+        width: "100%",
+        alignItems: "start",
+    },
 
 
-  deleteBtn: {
-    background: "transparent",
-    border: "none",
-    color: "#ef4444",
-    cursor: "pointer",
-    fontSize: 16
-  },
 
-  timestamps: {
-    fontSize: 12,
-    color: "#64748b",
-    display: "flex",
-    flexDirection: "column",
-    gap: 2
-  },
-
-  cardMeta: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center"
-  },
-
-  username: {
-    fontSize: 12,
-    color: "#475569",
-    fontWeight: 500
-  },
+    column: {
+        background: "#f8fafc",
+        borderRadius: 12,
+        padding: 12,
+        minHeight: 300,
+        display: "flex",
+        flexDirection: "column",
+        boxShadow: "0 4px 10px rgba(0,0,0,0.05)",
+        border: "1px solid #e2e8f0",
+    },
 
 
-  avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: "50%",
-    objectFit: "cover",
-    border: "1px solid #cbd5e1"
-  },
 
-  taskTitle: {
-    cursor: "pointer",
-    fontWeight: 600,
-    fontSize: 14,
-    lineHeight: "1.4em",
+    columnTitle: {
+        textAlign: "center",
+        fontWeight: 600,
+        color: "#1e40af",
+        marginBottom: 12
+    },
 
-    maxInlineSize: "38ch",    // THIS controls words per line
+    /* CARD */
+    card: {
+        background: "#f8fafc",
+        padding: 12,
+        borderRadius: 8,
+        marginBottom: 12,
+        boxShadow: "0 2px 6px rgba(0,0,0,0.08)"
+    },
 
-    display: "-webkit-box",
-    WebkitBoxOrient: "vertical",
-    WebkitLineClamp: 3,
-    overflow: "hidden",
+    cardHeader: {
+        display: "grid",
+        gridTemplateColumns: "1fr",
+        rowGap: 6,
+        marginBottom: 6
+    },
 
-    wordBreak: "break-word",
-    overflowWrap: "anywhere",
-    whiteSpace: "normal"
-  },
-  
-  menuBtnStyle: {
-    width: "100%",
-    padding: "8px 12px",
-    textAlign: "left",
-    background: "transparent",
-    border: "none",
-    cursor: "pointer",
-    fontSize: 14,
-  },
 
-  menuBtn: {
-    width: 20,                  // medyo mas malapad
-    height: 24,                 // vertical rectangle
-    borderRadius: 6,            // soft corners
-    background: "#85aceb",      // blue
-    color: "#fff",
-    border: "none",
-    cursor: "pointer",
-    fontSize: 16,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    flexDirection: "column",    // vertical dots
-    gap: 3,                     // space between dots
-    padding: 4,
-  },
+    deleteBtn: {
+        background: "transparent",
+        border: "none",
+        color: "#ef4444",
+        cursor: "pointer",
+        fontSize: 16
+    },
 
-  // individual dot inside menu button (pseudo-element replacement)
-  menuDot: {
-    width: 4,
-    height: 4,
-    borderRadius: "50%",
-    background: "#fff",
-  },
+    timestamps: {
+        fontSize: 12,
+        color: "#64748b",
+        display: "flex",
+        flexDirection: "column",
+        gap: 2
+    },
 
-taskMenuContainer: {
-  position: "absolute",
-  right: 0,
-  top: "100%",
-  background: "#fff",
-  border: "1px solid #cbd5e1",
-  borderRadius: 6,
-  boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
-  zIndex: 10,
-  width: 140,          // compact width
-  padding: "4px 0",
-  fontSize: 13,        // smaller font
-},
-taskMenuOption: {
-  display: "block",
-  width: "100%",
-  textAlign: "left",
-  padding: "4px 10px",
-  border: "none",
-  background: "transparent",
-  cursor: "pointer",
-},
-taskMenuDelete: {
-  display: "block",
-  width: "100%",
-  textAlign: "left",
-  padding: "4px 10px",
-  border: "none",
-  background: "#fee2e2", // light red for delete
-  cursor: "pointer",
-  color: "#b91c1c",
-},
+    cardMeta: {
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center"
+    },
+
+    username: {
+        fontSize: 12,
+        color: "#475569",
+        fontWeight: 500
+    },
+
+
+    avatar: {
+        width: 48,
+        height: 48,
+        borderRadius: "50%",
+        objectFit: "cover",
+        border: "1px solid #cbd5e1"
+    },
+
+    taskTitle: {
+        cursor: "pointer",
+        fontWeight: 600,
+        fontSize: 14,
+        lineHeight: "1.4em",
+
+        maxInlineSize: "38ch",    // THIS controls words per line
+
+        display: "-webkit-box",
+        WebkitBoxOrient: "vertical",
+        WebkitLineClamp: 3,
+        overflow: "hidden",
+
+        wordBreak: "break-word",
+        overflowWrap: "anywhere",
+        whiteSpace: "normal"
+    },
+
+    menuBtnStyle: {
+        width: "100%",
+        padding: "8px 12px",
+        textAlign: "left",
+        background: "transparent",
+        border: "none",
+        cursor: "pointer",
+        fontSize: 14,
+    },
+
+    menuBtn: {
+        width: 20,                  // medyo mas malapad
+        height: 24,                 // vertical rectangle
+        borderRadius: 6,            // soft corners
+        background: "#85aceb",      // blue
+        color: "#fff",
+        border: "none",
+        cursor: "pointer",
+        fontSize: 16,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        flexDirection: "column",    // vertical dots
+        gap: 3,                     // space between dots
+        padding: 4,
+    },
+
+    // individual dot inside menu button (pseudo-element replacement)
+    menuDot: {
+        width: 4,
+        height: 4,
+        borderRadius: "50%",
+        background: "#fff",
+    },
+
+    taskMenuContainer: {
+        position: "absolute",
+        right: 0,
+        top: "100%",
+        background: "#fff",
+        border: "1px solid #cbd5e1",
+        borderRadius: 6,
+        boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
+        zIndex: 10,
+        width: 140,          // compact width
+        padding: "4px 0",
+        fontSize: 13,        // smaller font
+    },
+    taskMenuOption: {
+        display: "block",
+        width: "100%",
+        textAlign: "left",
+        padding: "4px 10px",
+        border: "none",
+        background: "transparent",
+        cursor: "pointer",
+    },
+    taskMenuDelete: {
+        display: "block",
+        width: "100%",
+        textAlign: "left",
+        padding: "4px 10px",
+        border: "none",
+        background: "#fee2e2", // light red for delete
+        cursor: "pointer",
+        color: "#b91c1c",
+    },
+
+    historyContainer: {
+        marginTop: 20,
+        padding: 0,
+        border: "3px solid #96a6c4",
+        borderRadius: 8,
+        backgroundColor: "#dfe3e9",
+        maxHeight: 280,          // fixed scrollable height
+        overflowY: "auto",
+        display: "flex",
+        flexDirection: "column",
+    },
+
+    historyHeader: {
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        gap: 12,
+        marginBottom: 12,
+        position: "sticky",       // 🔹 stick to top of scroll container
+        top: 0,
+        backgroundColor: "#dfe3e9", // same as container to prevent overlap
+        zIndex: 5,
+        paddingTop: 4,
+        padding: "12px 16px",       // 🔹 controlled padding inside header
+        borderBottom: "1px solid #96a6c4",
+    },
+
+
+    historyFilterWrapper: {
+        display: "flex",
+        alignItems: "center",   // vertical center
+        gap: 4,                  // space between label & input
+        flexWrap: "nowrap",      // prevent wrapping
+        width: "100%",           // allow container to use full width
+        maxWidth: 220,           // optional limit
+    },
+
+    historyTitle: {
+        fontSize: 16,
+        fontWeight: 600,
+        color: "#1e293b",
+    },
+    historyFilterContainer: {
+        display: "flex",
+        alignItems: "center",
+        gap: 6,
+    },
+    historyInput: {
+        fontSize: 12,
+        padding: "6px 10px",
+        border: "1px solid #cbd5e1",
+        borderRadius: 8,
+        backgroundColor: "#ffffff",
+        color: "#0f172a",
+        outline: "none",
+        cursor: "pointer",
+        boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
+        transition: "all 0.2s ease-in-out",
+        width: 120,           // fixed width to prevent wrapping
+        flexShrink: 0,        // don't shrink when container is narrow
+    },
+
+    historyInputFocus: {
+        borderColor: "#6366f1",
+        boxShadow: "0 0 0 2px rgba(99,102,241,0.2)",
+    },
+    historyClearBtn: {
+        fontSize: 12,
+        padding: "4px 8px",
+        border: "none",
+        borderRadius: 4,
+        backgroundColor: "#e2e8f0",
+        cursor: "pointer",
+    },
+    historyList: {
+        listStyle: "none",
+        padding: 0,
+        margin: 0,
+    },
+    historyItem: {
+        marginBottom: 6,
+        fontSize: 12,
+        color: "#334155",
+        lineHeight: 1.4,
+    },
+    historyItemMeta: {
+        color: "#64748b",
+        fontStyle: "italic",
+        marginLeft: 4,
+        fontSize: 11,
+    },
+    historyNotice: {
+        fontSize: 12,
+        color: "#64748b",
+        marginTop: 8,
+    },
+    flatpickrContainer: {
+        width: 100,
+        maxWidth: 220,
+    },
+
 
 };
-  
+

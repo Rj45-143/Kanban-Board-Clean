@@ -27,11 +27,11 @@ export default function PopupMessage({
 
   const bgColor =
     type === "error" ? "#fee2e2" :
-    type === "success" ? "#d1fae5" : "#e0f2fe";
+      type === "success" ? "#d1fae5" : "#e0f2fe";
 
   const textColor =
     type === "error" ? "#b91c1c" :
-    type === "success" ? "#065f46" : "#0369a1";
+      type === "success" ? "#065f46" : "#0369a1";
 
   return (
     <div style={{

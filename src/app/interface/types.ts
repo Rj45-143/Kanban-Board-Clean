@@ -1,10 +1,11 @@
 export interface Task {
   id: string;
   content: string;
+  username: string;
+  column: "todo" | "inprogress" | "done";
   createdAt: string;
   inProgressAt?: string;
-  doneAt?: string;
-  username: string;
   estimatedCompletion?: string;
-  column: "todo" | "inprogress" | "done";
+  doneAt?: string;
+  history?: { username: string; action: string; timestamp: string }[];
 }
