@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef} from "react";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { v4 as uuidv4 } from "uuid";
 import EstimatedCompletionModal from "./EstimatedCompletionModal";
@@ -8,7 +8,7 @@ import { getCurrentUser, logout } from "../lib/clientAuth";
 import PopupMessage from "./PopupMessage";
 import EditTaskModal from "./EditTaskModal";
 import { Task } from "../interface/types";
-
+import { styles } from "./KanbanStyles";
 
 interface Column {
   id: "todo" | "inprogress" | "done";
@@ -35,8 +35,11 @@ export default function KanbanBoard() {
   const [popup, setPopup] = useState<{message: string, type?: "error" | "success" | "info"} | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
+  const [taskMenuOpen, setTaskMenuOpen] = useState<string | null>(null);
+  const taskMenuRef = useRef<HTMLDivElement | null>(null);
+  const taskBtnRef = useRef<HTMLButtonElement | null>(null);
 
-
+  
 useEffect(() => {
   const init = async () => {
     const user = await getCurrentUser();
@@ -58,27 +61,23 @@ useEffect(() => {
   init();
 }, []);
 
+useEffect(() => {
+  const handleClickOutside = (e: MouseEvent) => {
+    if (
+      taskMenuOpen &&
+      taskMenuRef.current &&
+      !taskMenuRef.current.contains(e.target as Node) &&
+      taskBtnRef.current &&
+      !taskBtnRef.current.contains(e.target as Node)
+    ) {
+      setTaskMenuOpen(null);
+    }
+  };
 
-// useEffect(() => {
-//   const init = async () => {
-//     const user = await getCurrentUser();
-//     if (!user) {
-//       window.location.href = "/";
-//       return;
-//     }
-//     setUsername(user);
+  document.addEventListener("mousedown", handleClickOutside);
+  return () => document.removeEventListener("mousedown", handleClickOutside);
+}, [taskMenuOpen]); // fixed length array, always 1 dependency
 
-//     const res = await fetch("/api/tasks");
-//     const tasks: Task[] = await res.json();
-//     setAllTasks(tasks);
-
-//     // 🔹 Default: show only current user's tasks
-//     setUserFilter(user);
-//     filterTasks(tasks, user);
-//   };
-
-//   init();
-// }, []);
 
   const filterTasks = (tasks: Task[], filterUser?: string) => {
     // kung empty string o undefined → all tasks
@@ -98,22 +97,6 @@ useEffect(() => {
 
     setColumns(newColumns);
   };
-
-  // const filterTasks = (tasks: Task[], filterUser?: string) => {
-  //   const filtered = filterUser ? tasks.filter(t => t.username === filterUser) : [...tasks];
-
-  //   const newColumns: Record<Column["id"], Column> = {
-  //     todo: { ...initialData.todo, tasks: [] },
-  //     inprogress: { ...initialData.inprogress, tasks: [] },
-  //     done: { ...initialData.done, tasks: [] },
-  //   };
-
-  //   filtered.forEach(t => {
-  //     newColumns[t.column].tasks.push(t);
-  //   });
-
-  //   setColumns(newColumns);
-  // };
 
   const handleUserFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
@@ -214,13 +197,20 @@ useEffect(() => {
 const handleSaveEstimatedCompletion = (date: string) => {
   if (!currentTask || !currentDestColumnId || currentSourceIndex === null) return;
 
-  const today = new Date();
   const selected = new Date(date);
-  today.setHours(0,0,0,0);
-  selected.setHours(0,0,0,0);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  selected.setHours(0, 0, 0, 0);
 
+  // 🔹 Prevent past dates
   if (selected < today) {
     setPopup({ message: "Estimated completion date cannot be in the past.", type: "error" });
+    return;
+  }
+
+  // 🔹 Prevent year longer than 4 digits
+  if (selected.getFullYear() > 9999) {
+    setPopup({ message: "Year cannot be more than 4 digits.", type: "error" });
     return;
   }
 
@@ -277,26 +267,23 @@ const handleExportCSV = () => {
 
 
 const handleCancelEstimatedCompletion = () => {
-  if (!currentTask || currentSourceIndex === null) return;
+  if (!currentTask || currentSourceIndex === null || !currentDestColumnId) return;
 
-  // Update allTasks first
   const updatedAllTasks = allTasks.map(t =>
     t.id === currentTask.id
-      ? { ...t, inProgressAt: undefined, column: "todo" as "todo" }
+      ? { ...t, inProgressAt: undefined, column: currentTask.column } // ibalik sa original
       : t
   );
 
   setAllTasks(updatedAllTasks);
-
-  // Rebuild columns from updatedAllTasks
   filterTasks(updatedAllTasks, userFilter || undefined);
 
-  // Reset modal state
   setModalOpen(false);
   setCurrentTask(null);
   setCurrentSourceIndex(null);
   setCurrentDestColumnId(null);
 };
+
 
   const handleEditTask = (task: Task) => {
     setTaskToEdit(task);
@@ -311,64 +298,98 @@ const handleCancelEstimatedCompletion = () => {
     setEditModalOpen(false);
   };
 
+  const toggleTaskMenu = (taskId: string) => {
+  setTaskMenuOpen(taskMenuOpen === taskId ? null : taskId);
+};
+
+const handleMoveTask = (task: Task, destColumnId: Column["id"]) => {
+  if (task.column === destColumnId) return;
+
+  // 🔹 Move to In Progress → kailangan modal kung wala pang inProgressAt
+  if (destColumnId === "inprogress" && !task.inProgressAt) {
+    setCurrentTask(task);
+    setCurrentDestColumnId(destColumnId);
+
+    const sourceIndex = columns[task.column].tasks.findIndex(t => t.id === task.id);
+    setCurrentSourceIndex(sourceIndex);
+
+    // Temporarily remove from source column
+    setColumns(prev => ({
+      ...prev,
+      [task.column]: {
+        ...prev[task.column],
+        tasks: prev[task.column].tasks.filter(t => t.id !== task.id),
+      },
+    }));
+
+    setModalOpen(true);
+    setTaskMenuOpen(null); // close menu
+    return;
+  }
+
+  // 🔹 Move back to To Do → clear inProgressAt and estimatedCompletion
+  const updatedTask: Task = {
+    ...task,
+    column: destColumnId,
+    inProgressAt: destColumnId === "todo" ? undefined : task.inProgressAt,
+    estimatedCompletion: destColumnId === "todo" ? undefined : task.estimatedCompletion,
+    doneAt: destColumnId === "done" && !task.doneAt ? new Date().toISOString() : task.doneAt,
+  };
+
+  const updatedAllTasks = allTasks.map(t => t.id === task.id ? updatedTask : t);
+  setAllTasks(updatedAllTasks);
+  filterTasks(updatedAllTasks, userFilter || undefined);
+  updateTaskInDB(updatedTask);
+  setTaskMenuOpen(null);
+};
+
+
 
   return (
-    <div style={styles.page}>
-        {popup && (
-          <PopupMessage
-            message={popup.message}
-            type={popup.type}
-            onClose={() => setPopup(null)}
+  <div style={styles.page}>
+    {popup && (
+      <PopupMessage
+        message={popup.message}
+        type={popup.type}
+        onClose={() => setPopup(null)}
+      />
+    )}
+
+    <header style={styles.header}>
+      <div style={styles.headerLeft}>
+        <h1 style={styles.title}>ARK I.T Solution's Kanban Board</h1>
+
+        {/* Filter under title */}
+        <div style={styles.filterUnderTitle}>
+          <label style={{ fontSize: 14 }}>Filter by user:</label>
+          <select
+            value={userFilter}
+            onChange={handleUserFilterChange}
+            style={styles.userSelect}
+          >
+            <option value="">All Users</option>
+            {Array.from(new Set(allTasks.map(t => t.username))).map(u => (
+              <option key={u} value={u}>{u}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div style={styles.headerRight}>
+        {username && (
+          <img
+            src={`/${username.toLowerCase()}.jpeg`}
+            alt={username}
+            style={styles.avatar}
           />
         )}
-      <header style={{ ...styles.header, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h1 style={styles.title}>Professional Kanban Board</h1>
-
-        <div style={styles.headerRight}>
-          {/* 🔹 Show user avatar */}
-          {username && (
-            <img
-              src={`/${username.toLowerCase()}.jpeg`}
-              alt={username}
-              style={styles.avatar}
-            />
-          )}
-          <span>{username}</span>
-          <button onClick={logout} style={styles.logoutBtn}>Logout</button>
-        </div>
-      </header>
-
-      {/* <div style={styles.filterContainer}>
-        <label>Filter by user:</label>
-        <select value={userFilter} onChange={handleUserFilterChange} style={styles.userSelect}>
-          <option value="">All Users</option>
-          {Array.from(new Set(allTasks.map(t => t.username))).map(u => (
-            <option key={u} value={u}>{u}</option>
-          ))}
-        </select>
-      </div> */}
-
-      <div style={styles.filterContainer}>
-        <label>Filter by user:</label>
-        <select value={userFilter} onChange={handleUserFilterChange} style={styles.userSelect}>
-          <option value="">All Users</option>
-          {Array.from(new Set(allTasks.map(t => t.username))).map(u => (
-            <option key={u} value={u}>{u}</option>
-          ))}
-        </select>
+        <span>{username}</span>
+        <button onClick={logout} style={styles.logoutBtn}>Logout</button>
       </div>
+    </header>
 
-
-      {/* 🔹 Export CSV Button */}
-      <div style={{ marginTop: 12 }}>
-        <button
-          onClick={handleExportCSV}
-          style={{ ...styles.csvBtn, fontSize: 12, padding: "6px 12px" }}
-        >
-          Export Board CSV
-        </button>
-      </div>
-
+    {/* Action row */}
+    <div style={styles.actionRow}>
       <div style={styles.addTask}>
         <input
           value={newTaskContent}
@@ -376,112 +397,173 @@ const handleCancelEstimatedCompletion = () => {
           placeholder="Enter new task..."
           style={styles.input}
         />
-        <button onClick={handleAddTask} style={styles.primaryBtn}>Add Task</button>
+        <button onClick={handleAddTask} style={styles.primaryBtn}>
+          Add Task
+        </button>
       </div>
 
-      <DragDropContext onDragEnd={onDragEnd}>
-        <div style={styles.board}>
-          {Object.values(columns).map(col => (
-            <Droppable droppableId={col.id} key={col.id}>
-              {p => (
-                <div ref={p.innerRef} {...p.droppableProps} style={styles.column}>
-                  <h3 style={styles.columnTitle}>{col.title}</h3>
-                  {col.tasks.map((task, i) => (
-                    <Draggable draggableId={task.id} index={i} key={task.id}>
-                      {p => (
-                        <div ref={p.innerRef} {...p.draggableProps} {...p.dragHandleProps} style={{ ...styles.card, ...p.draggableProps.style }}>
-                          <div style={styles.cardHeader}>
-                            <b onClick={() => handleEditTask(task)} style={{ cursor: "pointer" }}>{task.content}</b>
-                            <span>{task.username}</span>
-                            <button onClick={() => handleDeleteTask(col.id, task.id)} style={styles.deleteBtn}>❌</button>
-                          </div>
-                          <div style={styles.timestamps}>
-                            <small>Created: {new Date(task.createdAt).toLocaleString()}</small>
-                            {task.inProgressAt && <small>In Progress: {new Date(task.inProgressAt).toLocaleString()}</small>}
-                            {task.doneAt && <small>Done: {new Date(task.doneAt).toLocaleString()}</small>}
+      <button onClick={handleExportCSV} style={styles.csvBtn}>
+        Export Board CSV
+      </button>
+    </div>
+
+    <DragDropContext onDragEnd={onDragEnd}>
+      <div style={styles.board}>
+        {Object.values(columns).map((col) => (
+          <Droppable droppableId={col.id} key={col.id}>
+            {(provided) => (
+              <div
+                ref={provided.innerRef}
+                {...provided.droppableProps}
+                style={styles.column}
+              >
+                <h3 style={styles.columnTitle}>{col.title}</h3>
+
+                {col.tasks.map((task, index) => (
+                  <Draggable draggableId={task.id} index={index} key={task.id}>
+                    {(provided) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                        {...provided.dragHandleProps}
+                        style={{ ...styles.card, ...provided.draggableProps.style }}
+                      >
+                        <div style={styles.cardHeader}>
+                          <b
+                            onClick={() => handleEditTask(task)}
+                            style={styles.taskTitle}
+                          >
+                            {task.content}
+                          </b>
+
+                          <div style={styles.cardMeta}>
+                            <span style={styles.username}>{task.username}</span>
+
+                            {/* Three-dots menu */}
+                            <div style={{ position: "relative" }}>
+                              <button
+                                ref={taskBtnRef} //
+                                onClick={() => toggleTaskMenu(task.id)}
+                                style={styles.menuBtn}
+                              >
+                                ⋮
+                              </button>
+                              {taskMenuOpen === task.id && (
+                                <div
+                                  ref={taskMenuRef} // reference sa menu
+                                  style={{
+                                    ...styles.taskMenuContainer,
+                                    width: 140,
+                                    padding: "4px 0",
+                                    fontSize: 10,
+                                  }}
+                                >
+                                  <button
+                                    style={styles.taskMenuOption}
+                                    onClick={() => handleEditTask(task)}
+                                  >
+                                    Edit Details
+                                  </button>
+
+                                  <button
+                                    style={styles.taskMenuDelete}
+                                    onClick={() => handleDeleteTask(col.id, task.id)}
+                                  >
+                                    Delete
+                                  </button>
+
+                                  {/* Dynamic Move/Move back options */}
+                                  {(() => {
+                                    let moveOptions: { label: string; columnId: Column["id"] }[] = [];
+
+                                    if (col.id === "todo") {
+                                      moveOptions = [
+                                        { label: "In Progress", columnId: "inprogress" },
+                                        { label: "Done", columnId: "done" },
+                                      ];
+                                    } else if (col.id === "inprogress") {
+                                      moveOptions = [
+                                        { label: "To Do", columnId: "todo" },
+                                        { label: "Done", columnId: "done" },
+                                      ];
+                                    } else if (col.id === "done") {
+                                      moveOptions = [
+                                        { label: "To Do", columnId: "todo" },
+                                        { label: "In Progress", columnId: "inprogress" },
+                                      ];
+                                    }
+
+                                    return moveOptions.map((opt) => (
+                                      <button
+                                        key={opt.columnId}
+                                        style={styles.taskMenuOption}
+                                        onMouseEnter={(e) => (e.currentTarget.style.background = "#e0e7ff")}
+                                        onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                                        onClick={() => handleMoveTask(task, opt.columnId)}
+                                      >
+                                        {col.id === "inprogress"
+                                          ? opt.columnId === "todo"
+                                            ? "Move back: To Do"
+                                            : "Move to: Done"
+                                          : col.id === "done"
+                                          ? opt.columnId === "todo"
+                                            ? "Move back: To Do"
+                                            : "Move to: In Progress"
+                                          : "Move to: " + opt.label}
+                                      </button>
+                                    ));
+                                  })()}
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      )}
-                    </Draggable>
-                  ))}
-                  {p.placeholder}
-                </div>
-              )}
-            </Droppable>
-          ))}
-        </div>
-      </DragDropContext>
+                          <div style={styles.timestamps}>
+                            <small>Created: {new Date(task.createdAt).toLocaleString()}</small>
 
-      <EstimatedCompletionModal
-        isOpen={modalOpen}
-        onClose={handleCancelEstimatedCompletion}
-        onSave={handleSaveEstimatedCompletion}
-      />
+                            {/* 🔹 Show In Progress & Target if column is In Progress or Done */}
+                            {(task.column === "inprogress" || task.column === "done") && task.inProgressAt && (
+                              <>
+                                <small>In Progress: {new Date(task.inProgressAt).toLocaleString()}</small>
+                                {task.estimatedCompletion && (
+                                  <small>Target: {new Date(task.estimatedCompletion).toLocaleDateString()}</small>
+                                )}
+                              </>
+                            )}
 
-      <EditTaskModal
-        isOpen={editModalOpen}
-        task={taskToEdit}
-        allUsers={Array.from(new Set(allTasks.map(t => t.username)))}
-        onClose={() => setEditModalOpen(false)}
-        onSave={handleSaveEditedTask}
-      />
-    </div>
-  );
+                            {/* 🔹 Only show Done info if column is done */}
+                            {task.column === "done" && task.doneAt && (
+                              <small>Done: {new Date(task.doneAt).toLocaleString()}</small>
+                            )}
+                          </div>
+                      </div>
+                    )}
+                  </Draggable>
+                ))}
+
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
+        ))}
+      </div>
+    </DragDropContext>
+
+    <EstimatedCompletionModal
+      isOpen={modalOpen}
+      onClose={handleCancelEstimatedCompletion}
+      onSave={handleSaveEstimatedCompletion}
+    />
+
+    <EditTaskModal
+      isOpen={editModalOpen}
+      task={taskToEdit}
+      allUsers={Array.from(new Set(allTasks.map(t => t.username)))}
+      onClose={() => setEditModalOpen(false)}
+      onSave={handleSaveEditedTask}
+    />
+  </div>
+);
+
 }
-
-/* ================= UPDATED STYLES ================= */
-const styles: Record<string, React.CSSProperties> = {
-  page: { minHeight: "100vh", padding: 20, background: "#f0f4f8" },
-  header: { 
-    maxWidth: 1200, 
-    margin: "0 auto 20px", 
-    display: "flex", 
-    justifyContent: "space-between", 
-    alignItems: "center" 
-  },
-  title: { fontSize: 32, fontWeight: 700, color: "#1e3a8a" },
-  headerRight: { display: "flex", gap: 12, alignItems: "center" },
-  logoutBtn: { background: "#ef4444", color: "#fff", border: "none", padding: "8px 14px", borderRadius: 8, cursor: "pointer" },
-
-  /* FILTER / DROPDOWN */
-  filterContainer: { display: "flex", alignItems: "center", gap: 8, marginBottom: 16 },
-  userSelect: { 
-    padding: "6px 30px", 
-    borderRadius: 6, 
-    border: "1px solid #cbd5e1", 
-    appearance: "none",       // removes default arrow spacing
-    background: "url('data:image/svg+xml;utf8,<svg fill=\"%23007bff\" height=\"12\" viewBox=\"0 0 24 24\" width=\"12\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M7 10l5 5 5-5z\"/></svg>') no-repeat right 8px center", // custom arrow
-    backgroundColor: "#fff",
-    cursor: "pointer"
-  },
-
-  /* ADD TASK INPUT */
-  addTask: { display: "flex", gap: 12, maxWidth: 800, margin: "0 auto 20px" },
-  input: { flex: 1, padding: 10, borderRadius: 6, border: "1px solid #cbd5e1" },
-  primaryBtn: { background: "#3b82f6", color: "#fff", padding: "10px 16px", borderRadius: 6, border: "none", cursor: "pointer" },
-  csvBtn: { background: "green", color: "#fff", padding: "10px 16px", borderRadius: 6, border: "none", cursor: "pointer" },
-
-  /* BOARD */
-  board: { display: "flex", gap: 24, justifyContent: "center", width: "100%", overflowX: "auto" },
-  column: { background: "#fff", padding: 16, borderRadius: 12, minWidth: 300, flex: "0 0 auto" }, // spacing columns evenly
-  columnTitle: { textAlign: "center", fontWeight: 600, color: "#1e40af", marginBottom: 12 },
-
-  /* TASK CARD */
-  card: { background: "#f8fafc", padding: 12, borderRadius: 8, marginBottom: 12, boxShadow: "0 2px 6px rgba(0,0,0,0.08)" },
-  cardHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, gap: 8 },
-  deleteBtn: { background: "transparent", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 16 },
-  timestamps: { fontSize: 12, color: "#64748b", display: "flex", flexDirection: "column", gap: 2 },
-
-  /* Avatar Style */
-  avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: "50%",
-    objectFit: "cover",
-    marginRight: 8,
-    border: "1px solid #cbd5e1",
-  }
-
-
-};
 
