@@ -37,3 +37,29 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ success: true });
 }
+
+// DELETE → clear all history (passcode protected)
+export async function DELETE(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const { passcode } = body;
+
+    // 🔹 Server-only passcode (from .env.local)
+    if (passcode !== process.env.HISTORY_PASSCODE) {
+      return NextResponse.json(
+        { success: false, message: "Incorrect passcode" },
+        { status: 401 }
+      );
+    }
+
+    const client = await clientPromise;
+    const db = client.db("kanban");
+
+    await db.collection("history_logs").deleteMany({}); // delete all logs
+
+    return NextResponse.json({ success: true, message: "History logs cleared!" });
+  } catch (err) {
+    console.error("Failed to delete history:", err);
+    return NextResponse.json({ success: false, message: "Server error" }, { status: 500 });
+  }
+}

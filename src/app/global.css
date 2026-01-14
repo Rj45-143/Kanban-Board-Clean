@@ -3,8 +3,11 @@
 /* Body */
 body {
   margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
   font-family: system-ui, sans-serif;
-  background: #f9f9f9;
+  background: none; /* alisin ang solid color para lumabas ang image sa container */
 }
 
 /* 🔹 Flatpickr modern small calendar */

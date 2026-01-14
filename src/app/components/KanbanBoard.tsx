@@ -42,6 +42,8 @@ export default function KanbanBoard() {
   const taskBtnRef = useRef<HTMLButtonElement | null>(null);
   const [historyLogs, setHistoryLogs] = useState<{ username: string; action: string; timestamp: string }[]>([]);
   const [historyFilterDate, setHistoryFilterDate] = useState<string>(""); // YYYY-MM-DD
+  const [deleteHistoryModalOpen, setDeleteHistoryModalOpen] = useState(false);
+  const [passcodeInput, setPasscodeInput] = useState("");
 
 
   // Filtered logs based on date
@@ -60,7 +62,6 @@ export default function KanbanBoard() {
     }
   };
 
-
   const saveHistoryLog = async (log: { username: string; action: string; timestamp: string; taskId?: string }) => {
     try {
       await fetch("/api/history", {
@@ -72,6 +73,13 @@ export default function KanbanBoard() {
       console.error("Failed to save history log:", err);
     }
   };
+
+  useEffect(() => {
+    if (deleteHistoryModalOpen) {
+      setPasscodeInput(""); // clear field when modal opens
+    }
+  }, [deleteHistoryModalOpen]);
+
 
   useEffect(() => {
     const init = async () => {
@@ -94,7 +102,7 @@ export default function KanbanBoard() {
       const combinedHistory = tasks.flatMap(t =>
         t.history?.map(h => ({
           username: h.username,
-          action: h.action + ` ("${t.content}")`, // show task content
+          action: h.action, // ` ("${t.content}")`, // show task content
           timestamp: h.timestamp
         })) || []
       );
@@ -174,7 +182,7 @@ export default function KanbanBoard() {
     filterTasks(updatedTasks, userFilter || undefined);
     setNewTaskContent("");
 
-    
+
     // 🔹 HISTORY LOG
     const createLog = {
       username,
@@ -440,79 +448,115 @@ export default function KanbanBoard() {
     setTaskMenuOpen(taskMenuOpen === taskId ? null : taskId);
   };
 
-const handleMoveTask = (task: Task, destColumnId: Column["id"]) => {
-  if (task.column === destColumnId) return;
+  const handleMoveTask = (task: Task, destColumnId: Column["id"]) => {
+    if (task.column === destColumnId) return;
 
-  // CASE: Moving to In Progress but not started → show modal
-  if (destColumnId === "inprogress" && !task.inProgressAt) {
-    setCurrentTask(task);
-    setCurrentDestColumnId(destColumnId);
+    // CASE: Moving to In Progress but not started → show modal
+    if (destColumnId === "inprogress" && !task.inProgressAt) {
+      setCurrentTask(task);
+      setCurrentDestColumnId(destColumnId);
 
-    const sourceIndex = columns[task.column].tasks.findIndex(t => t.id === task.id);
-    setCurrentSourceIndex(sourceIndex);
+      const sourceIndex = columns[task.column].tasks.findIndex(t => t.id === task.id);
+      setCurrentSourceIndex(sourceIndex);
 
-    setColumns(prev => ({
-      ...prev,
-      [task.column]: {
-        ...prev[task.column],
-        tasks: prev[task.column].tasks.filter(t => t.id !== task.id),
-      },
-    }));
+      setColumns(prev => ({
+        ...prev,
+        [task.column]: {
+          ...prev[task.column],
+          tasks: prev[task.column].tasks.filter(t => t.id !== task.id),
+        },
+      }));
 
-    setModalOpen(true);
+      setModalOpen(true);
+      setTaskMenuOpen(null);
+      return;
+    }
+
+    // 🔹 Prepare updated task safely
+    const timestamp = new Date().toISOString();
+    let updatedTask: Task = {
+      ...task,
+      column: destColumnId,
+      inProgressAt: destColumnId === "inprogress" ? task.inProgressAt : undefined,
+      estimatedCompletion: destColumnId === "inprogress" ? task.estimatedCompletion : undefined,
+      doneAt: destColumnId === "done" && !task.doneAt ? timestamp : task.doneAt,
+      history: [...(task.history ?? [])], // ✅ TypeScript-safe
+    };
+
+    // 🔹 Double-safety for history before push
+    updatedTask.history = updatedTask.history ?? [];
+
+    // 🔹 Format action for global/user history
+    const logAction = formatHistoryAction(
+      username || "Unknown",
+      task.username,
+      task.content,
+      destColumnId
+    );
+
+    // 🔹 Push to task history
+    updatedTask.history.push({
+      username: username || "Unknown",
+      action: logAction,
+      timestamp,
+    });
+
+    // 🔹 Update all tasks & columns
+    const updatedAllTasks = allTasks.map(t => (t.id === task.id ? updatedTask : t));
+    setAllTasks(updatedAllTasks);
+    filterTasks(updatedAllTasks, userFilter || undefined);
+
+    // 🔹 Update DB
+    updateTaskInDB(updatedTask);
+
+    // 🔹 Update global history log
+    const menuLog = {
+      username: username || "Unknown",
+      action: logAction,
+      timestamp,
+      taskId: task.id,
+    };
+    setHistoryLogs(prev => [menuLog, ...prev]);
+    saveHistoryLog(menuLog);
+
     setTaskMenuOpen(null);
-    return;
-  }
-
-  // 🔹 Prepare updated task safely
-  const timestamp = new Date().toISOString();
-  let updatedTask: Task = {
-    ...task,
-    column: destColumnId,
-    inProgressAt: destColumnId === "inprogress" ? task.inProgressAt : undefined,
-    estimatedCompletion: destColumnId === "inprogress" ? task.estimatedCompletion : undefined,
-    doneAt: destColumnId === "done" && !task.doneAt ? timestamp : task.doneAt,
-    history: [...(task.history ?? [])], // ✅ TypeScript-safe
   };
 
-  // 🔹 Double-safety for history before push
-  updatedTask.history = updatedTask.history ?? [];
+  const handleDeleteHistory = async () => {
+    try {
+      const res = await fetch("/api/history", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ passcode: passcodeInput }),
+      });
+      const data = await res.json();
 
-  // 🔹 Format action for global/user history
-  const logAction = formatHistoryAction(
-    username || "Unknown",
-    task.username,
-    task.content,
-    destColumnId
-  );
+      if (res.ok && data.success) {
+        // Update all tasks in DB to remove history
+        const tasksRes = await fetch("/api/tasks");
+        const tasks: Task[] = await tasksRes.json();
 
-  // 🔹 Push to task history
-  updatedTask.history.push({
-    username: username || "Unknown",
-    action: logAction,
-    timestamp,
-  });
+        await Promise.all(tasks.map(task => 
+          fetch("/api/tasks", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: task.id, updates: { history: [] } }),
+          })
+        ));
 
-  // 🔹 Update all tasks & columns
-  const updatedAllTasks = allTasks.map(t => (t.id === task.id ? updatedTask : t));
-  setAllTasks(updatedAllTasks);
-  filterTasks(updatedAllTasks, userFilter || undefined);
-
-  // 🔹 Update DB
-  updateTaskInDB(updatedTask);
-
-  // 🔹 Update global history log
-  const menuLog = {
-    username: username || "Unknown",
-    action: logAction,
-    timestamp,
-    taskId: task.id,
+        setHistoryLogs([]); // clear local logs
+        setPopup({ message: data.message, type: "success" });
+        setDeleteHistoryModalOpen(false);
+        setPasscodeInput("");
+      } else {
+        setPopup({ message: data.message || "Incorrect passcode.", type: "error" });
+      }
+    } catch (err) {
+      console.error(err);
+      setPopup({ message: "Failed to delete logs.", type: "error" });
+    }
   };
-  setHistoryLogs(prev => [menuLog, ...prev]);
-  saveHistoryLog(menuLog);
 
-  setTaskMenuOpen(null);
-};
 
   return (
     <div style={styles.page}>
@@ -740,29 +784,89 @@ const handleMoveTask = (task: Task, destColumnId: Column["id"]) => {
         <div style={styles.historyHeader}>
           <h3 style={styles.historyTitle}>History Logs</h3>
 
-          <div style={styles.historyFilterWrapper}>
-            <label style={{ fontSize: 12, color: "#64748b", marginRight: 4 }}>Filter by date:</label>
-            <Flatpickr
-              value={historyFilterDate}
-              onChange={(dates: (Date | string)[]) => {
-                const date = dates[0];
+          <div style={styles.historyFilterRow}>
+            {/* Filter by Date */}
+            <div style={styles.historyFilterWrapper}>
+              <label style={{ fontSize: 12, color: "#64748b", marginRight: 4 }}>
+                Filter by date:
+              </label>
+              <Flatpickr
+                value={historyFilterDate}
+                onChange={(dates: (Date | string)[]) => {
+                  const date = dates[0];
+                  if (date instanceof Date) {
+                    const year = date.getFullYear();
+                    const month = (date.getMonth() + 1).toString().padStart(2, "0");
+                    const day = date.getDate().toString().padStart(2, "0");
+                    setHistoryFilterDate(`${year}-${month}-${day}`);
+                  } else {
+                    setHistoryFilterDate("");
+                  }
+                }}
+                options={{ dateFormat: "Y-m-d", allowInput: true }}
+                placeholder="Select date"
+                style={styles.historyInput}
+              />
+            </div>
 
-                // Only accept valid Date
-                if (date instanceof Date) {
-                  const year = date.getFullYear();
-                  const month = (date.getMonth() + 1).toString().padStart(2, "0");
-                  const day = date.getDate().toString().padStart(2, "0");
-                  setHistoryFilterDate(`${year}-${month}-${day}`);
-                } else {
-                  setHistoryFilterDate("");
-                }
-              }}
-              options={{ dateFormat: "Y-m-d", allowInput: true }}
-              placeholder="Select date"
-              style={styles.historyInput}
-            />
+            {/* Delete History Button */}
+            <button
+              style={styles.deleteHistoryBtn}
+              onClick={() => setDeleteHistoryModalOpen(true)}
+            >
+              Delete History
+            </button>
           </div>
         </div>
+
+
+        {/* 🔹 Delete History Modal */}
+        {deleteHistoryModalOpen && (
+          <div style={styles.modalOverlay}>
+            <div style={styles.modalContent}>
+              <h3 style={{ marginBottom: 8, fontSize: 18, fontWeight: 600 }}>
+                Confirm Delete History
+              </h3>
+              <p style={{ marginBottom: 16, color: "#475569", fontSize: 14 }}>
+                Enter passcode to delete all history logs:
+              </p>
+
+              <input
+                type="password"
+                value={passcodeInput}
+                onChange={(e) => setPasscodeInput(e.target.value)}
+                style={styles.modalInput}
+                placeholder="Enter passcode"
+                autoComplete="new-password"
+              />
+
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  gap: 10,
+                  marginTop: 20,
+                }}
+              >
+                <button
+                  style={styles.primaryBtn}
+                  onClick={handleDeleteHistory}
+                >
+                  Confirm
+                </button>
+                <button
+                  style={styles.secondaryBtn}
+                  onClick={() => {
+                    setDeleteHistoryModalOpen(false);
+                    setPasscodeInput(""); // reset input on cancel
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <ul style={styles.historyList}>
           {latestHistoryLogs.map((log, index) => (
@@ -777,11 +881,11 @@ const handleMoveTask = (task: Task, destColumnId: Column["id"]) => {
 
         {filteredHistoryLogs.length > 20 && !historyFilterDate && (
           <p style={styles.historyNotice}>
-            Showing latest 20 of {filteredHistoryLogs.length} updates.
-            Use the date filter to see older logs.
+            {`Showing latest 20 of ${filteredHistoryLogs.length} updates. Use the date filter to see older logs.`}
           </p>
         )}
       </div>
+
     </div>
   );
 

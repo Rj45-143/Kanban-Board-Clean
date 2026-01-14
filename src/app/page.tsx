@@ -25,7 +25,7 @@ export default function AuthPage() {
       const data = await res.json();
 
       if (data.success) {
-        router.push("/kanban"); // protected by middleware
+        router.push("/kanban");
       } else {
         setError(data.message || "Invalid username or password");
       }
@@ -38,32 +38,34 @@ export default function AuthPage() {
 
   return (
     <div style={containerStyle}>
-      <form onSubmit={handleSubmit} style={formStyle}>
-        <h2 style={titleStyle}>Welcome, ARK warrior - Howahh</h2>
+      <div style={overlayStyle}>
+        <form onSubmit={handleSubmit} style={formStyle}>
+          <h2 style={titleStyle}>Welcome, ARK warrior - Howahh</h2>
 
-        {error && <p style={errorStyle}>{error}</p>}
+          {error && <p style={errorStyle}>{error}</p>}
 
-        <input
-          placeholder="Username"
-          value={username}
-          onChange={e => setUsername(e.target.value)}
-          style={inputStyle}
-          required
-        />
+          <input
+            placeholder="Username"
+            value={username}
+            onChange={e => setUsername(e.target.value)}
+            style={inputStyle}
+            required
+          />
 
-        <input
-          placeholder="Password"
-          type="password"
-          value={password}
-          onChange={e => setPassword(e.target.value)}
-          style={inputStyle}
-          required
-        />
+          <input
+            placeholder="Password"
+            type="password"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            style={inputStyle}
+            required
+          />
 
-        <button type="submit" style={buttonStyle} disabled={loading}>
-          {loading ? "Logging in..." : "Login"}
-        </button>
-      </form>
+          <button type="submit" style={buttonStyle} disabled={loading}>
+            {loading ? "Logging in..." : "Login"}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
@@ -71,21 +73,36 @@ export default function AuthPage() {
 /* ================= STYLES ================= */
 
 const containerStyle: React.CSSProperties = {
+  width: "100vw",
+  height: "100vh",
   display: "flex",
   justifyContent: "center",
   alignItems: "center",
-  height: "100vh",
-  background: "#f5f9ff",
-  padding: "16px",
+  margin: 0,
+  padding: 0,
+  backgroundImage: "url('/login-bg.png')",
+  backgroundSize: "cover",
+  backgroundPosition: "center",
+  backgroundRepeat: "no-repeat",
+};
+
+
+
+const overlayStyle: React.CSSProperties = {
+  width: "100%",
+  maxWidth: "400px",
+  background: "rgba(255, 255, 255, 0.85)",
+  borderRadius: "12px",
+  padding: "40px 32px",
+  boxShadow: "0 6px 20px rgba(0,0,0,0.1)",
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  gap: "16px",
 };
 
 const formStyle: React.CSSProperties = {
   width: "100%",
-  maxWidth: "400px",
-  background: "#fff",
-  padding: "40px 32px",
-  borderRadius: "12px",
-  boxShadow: "0 6px 20px rgba(0,0,0,0.1)",
   display: "flex",
   flexDirection: "column",
   alignItems: "center",

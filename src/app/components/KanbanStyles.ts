@@ -2,7 +2,7 @@ import { CSSProperties } from "react";
 
 export const styles: Record<string, CSSProperties> = {
     page: {
-        backgroundColor: "#f3f4f6", // light gray background
+        backgroundColor: "#dbeafe", // light gray background
         minHeight: "100vh",
         padding: 16,
     },
@@ -146,7 +146,7 @@ export const styles: Record<string, CSSProperties> = {
 
     /* CARD */
     card: {
-        background: "#f8fafc",
+        background: "#dbe6f0",
         padding: 12,
         borderRadius: 8,
         marginBottom: 12,
@@ -368,6 +368,7 @@ export const styles: Record<string, CSSProperties> = {
         fontSize: 12,
         color: "#334155",
         lineHeight: 1.4,
+        paddingLeft: 12, 
     },
     historyItemMeta: {
         color: "#64748b",
@@ -379,11 +380,108 @@ export const styles: Record<string, CSSProperties> = {
         fontSize: 12,
         color: "#64748b",
         marginTop: 8,
+        paddingLeft: 12,
     },
     flatpickrContainer: {
         width: 100,
         maxWidth: 220,
     },
+
+     deleteHistoryBtn: {
+    background: "#ef4444",
+    color: "#fff",
+    fontSize: 12,
+    padding: "5px 20px",
+    borderRadius: 6,
+    border: "none",
+    cursor: "pointer",
+    whiteSpace: "nowrap",
+  },
+
+  deleteHistoryModalOverlay: {
+    position: "fixed",
+    top: 0, left: 0,
+    width: "100%",
+    height: "100%",
+    backgroundColor: "rgba(0,0,0,0.3)",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 9999,
+  },
+
+  deleteHistoryModalContent: {
+    background: "#fff",
+    padding: 20,
+    borderRadius: 8,
+    minWidth: 300,
+    boxShadow: "0 4px 12px rgba(0,0,0,0.25)",
+  },
+
+  deleteHistoryInput: {
+    padding: 8,
+    width: "100%",
+    marginTop: 8,
+    borderRadius: 8,
+    border: "1px solid #cbd5e1",
+  },
+
+  deleteHistoryBtnRow: {
+    display: "flex",
+    justifyContent: "flex-end",
+    gap: 8,
+    marginTop: 12,
+  },
+
+  historyFilterRow: {
+  display: "flex",
+  alignItems: "center",
+  gap: 8,
+},
+
+  modalOverlay: {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    width: "100%",
+    height: "100%",
+    backgroundColor: "rgba(0,0,0,0.4)",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 9999,
+  },
+
+  modalContent: {
+    background: "#fff",
+    borderRadius: 12,
+    padding: 24,
+    width: 360,
+    boxShadow: "0 8px 24px rgba(0,0,0,0.2)",
+    display: "flex",
+    flexDirection: "column",
+  },
+
+  modalInput: {
+    padding: "8px 6px",
+    borderRadius: 6,
+    border: "1px solid #cbd5e1",
+    marginBottom: 12,
+    fontSize: 14,
+    outline: "none",
+    width: "95%",
+  },
+
+  secondaryBtn: {
+    background: "#e2e8f0",
+    color: "#1e293b",
+    border: "none",
+    borderRadius: 6,
+    cursor: "pointer",
+    fontWeight: 500,
+    minWidth: 90,
+    padding: "6px 16px",
+  },
 
 
 };
