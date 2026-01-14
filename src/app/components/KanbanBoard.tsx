@@ -536,7 +536,7 @@ export default function KanbanBoard() {
         const tasksRes = await fetch("/api/tasks");
         const tasks: Task[] = await tasksRes.json();
 
-        await Promise.all(tasks.map(task => 
+        await Promise.all(tasks.map(task =>
           fetch("/api/tasks", {
             method: "PUT",
             headers: { "Content-Type": "application/json" },

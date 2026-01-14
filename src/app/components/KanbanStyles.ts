@@ -286,51 +286,66 @@ export const styles: Record<string, CSSProperties> = {
 
     historyContainer: {
         marginTop: 20,
-        padding: 0,
+        padding: 8,           // 🔹 add padding
         border: "3px solid #96a6c4",
         borderRadius: 8,
         backgroundColor: "#dfe3e9",
-        maxHeight: 280,          // fixed scrollable height
+        maxHeight: 300,       // 🔹 slightly taller
         overflowY: "auto",
         display: "flex",
         flexDirection: "column",
+        gap: 6,               // 🔹 space between header & list
     },
 
     historyHeader: {
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
-        gap: 12,
+        flexWrap: "wrap",           // 🔑 magic
+        rowGap: 8,
+        columnGap: 12,
         marginBottom: 12,
-        position: "sticky",       // 🔹 stick to top of scroll container
+        position: "sticky",
         top: 0,
-        backgroundColor: "#dfe3e9", // same as container to prevent overlap
+        backgroundColor: "#dfe3e9",
         zIndex: 5,
-        paddingTop: 4,
-        padding: "12px 16px",       // 🔹 controlled padding inside header
+        padding: "12px 16px",
         borderBottom: "1px solid #96a6c4",
     },
 
 
+    historyFilterRow: {
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        flexWrap: "wrap",
+        justifyContent: "flex-end",
+        flex: "1 1 auto",        // 🔹 right side on desktop
+    },
+
     historyFilterWrapper: {
         display: "flex",
-        alignItems: "center",   // vertical center
-        gap: 4,                  // space between label & input
-        flexWrap: "nowrap",      // prevent wrapping
-        width: "100%",           // allow container to use full width
-        maxWidth: 220,           // optional limit
+        alignItems: "center",
+        gap: 4,
+        flexWrap: "nowrap",
+        maxWidth: "100%",
     },
+
 
     historyTitle: {
         fontSize: 16,
         fontWeight: 600,
         color: "#1e293b",
+        flex: "1 1 auto",        // 🔹 allow shrink/grow
+        minWidth: 120,
     },
+
     historyFilterContainer: {
         display: "flex",
         alignItems: "center",
         gap: 6,
     },
+
     historyInput: {
         fontSize: 12,
         padding: "6px 10px",
@@ -341,9 +356,8 @@ export const styles: Record<string, CSSProperties> = {
         outline: "none",
         cursor: "pointer",
         boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
-        transition: "all 0.2s ease-in-out",
-        width: 120,           // fixed width to prevent wrapping
-        flexShrink: 0,        // don't shrink when container is narrow
+        width: 120,
+        maxWidth: "100%",
     },
 
     historyInputFocus: {
@@ -362,13 +376,21 @@ export const styles: Record<string, CSSProperties> = {
         listStyle: "none",
         padding: 0,
         margin: 0,
+        display: "flex",
+        flexDirection: "column",
+        gap: 6,
     },
+
     historyItem: {
-        marginBottom: 6,
         fontSize: 12,
         color: "#334155",
         lineHeight: 1.4,
-        paddingLeft: 12, 
+        padding: "6px 12px",
+        background: "#fff",
+        borderRadius: 6,
+        boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+        wordBreak: "break-word",
+        overflowWrap: "anywhere",
     },
     historyItemMeta: {
         color: "#64748b",
@@ -387,101 +409,97 @@ export const styles: Record<string, CSSProperties> = {
         maxWidth: 220,
     },
 
-     deleteHistoryBtn: {
-    background: "#ef4444",
-    color: "#fff",
-    fontSize: 12,
-    padding: "5px 20px",
-    borderRadius: 6,
-    border: "none",
-    cursor: "pointer",
-    whiteSpace: "nowrap",
-  },
+    deleteHistoryBtn: {
+        background: "#ef4444",
+        color: "#fff",
+        fontSize: 12,
+        padding: "5px 12px",
+        borderRadius: 6,
+        border: "none",
+        cursor: "pointer",
+        whiteSpace: "nowrap",
+        alignSelf: "center",
+    },
 
-  deleteHistoryModalOverlay: {
-    position: "fixed",
-    top: 0, left: 0,
-    width: "100%",
-    height: "100%",
-    backgroundColor: "rgba(0,0,0,0.3)",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 9999,
-  },
 
-  deleteHistoryModalContent: {
-    background: "#fff",
-    padding: 20,
-    borderRadius: 8,
-    minWidth: 300,
-    boxShadow: "0 4px 12px rgba(0,0,0,0.25)",
-  },
+    deleteHistoryModalOverlay: {
+        position: "fixed",
+        top: 0, left: 0,
+        width: "100%",
+        height: "100%",
+        backgroundColor: "rgba(0,0,0,0.3)",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        zIndex: 9999,
+    },
 
-  deleteHistoryInput: {
-    padding: 8,
-    width: "100%",
-    marginTop: 8,
-    borderRadius: 8,
-    border: "1px solid #cbd5e1",
-  },
+    deleteHistoryModalContent: {
+        background: "#fff",
+        padding: 20,
+        borderRadius: 8,
+        minWidth: 300,
+        boxShadow: "0 4px 12px rgba(0,0,0,0.25)",
+    },
 
-  deleteHistoryBtnRow: {
-    display: "flex",
-    justifyContent: "flex-end",
-    gap: 8,
-    marginTop: 12,
-  },
+    deleteHistoryInput: {
+        padding: 8,
+        width: "100%",
+        marginTop: 8,
+        borderRadius: 8,
+        border: "1px solid #cbd5e1",
+    },
 
-  historyFilterRow: {
-  display: "flex",
-  alignItems: "center",
-  gap: 8,
-},
+    deleteHistoryBtnRow: {
+        display: "flex",
+        justifyContent: "flex-end",
+        gap: 8,
+        marginTop: 12,
+    },
 
-  modalOverlay: {
-    position: "fixed",
-    top: 0,
-    left: 0,
-    width: "100%",
-    height: "100%",
-    backgroundColor: "rgba(0,0,0,0.4)",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 9999,
-  },
+    modalOverlay: {
+        position: "fixed",
+        top: 0,
+        left: 0,
+        width: "100%",
+        height: "100%",
+        backgroundColor: "rgba(0,0,0,0.4)",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        zIndex: 9999,
+    },
 
-  modalContent: {
-    background: "#fff",
-    borderRadius: 12,
-    padding: 24,
-    width: 360,
-    boxShadow: "0 8px 24px rgba(0,0,0,0.2)",
-    display: "flex",
-    flexDirection: "column",
-  },
+    modalContent: {
+        background: "#fff",
+        borderRadius: 12,
+        padding: 24,
+        width: 360,
+        boxShadow: "0 8px 24px rgba(0,0,0,0.2)",
+        display: "flex",
+        flexDirection: "column",
+    },
 
-  modalInput: {
-    padding: "8px 6px",
-    borderRadius: 6,
-    border: "1px solid #cbd5e1",
-    marginBottom: 12,
-    fontSize: 14,
-    outline: "none",
-    width: "95%",
-  },
+    modalInput: {
+        padding: "8px 6px",
+        borderRadius: 6,
+        border: "1px solid #cbd5e1",
+        marginBottom: 12,
+        fontSize: 14,
+        outline: "none",
+        width: "95%",
+    },
 
-  secondaryBtn: {
-    background: "#e2e8f0",
-    color: "#1e293b",
-    border: "none",
-    borderRadius: 6,
-    cursor: "pointer",
-    fontWeight: 500,
-    minWidth: 90,
-    padding: "6px 16px",
-  },
+    secondaryBtn: {
+        background: "#e2e8f0",
+        color: "#1e293b",
+        border: "none",
+        borderRadius: 6,
+        cursor: "pointer",
+        fontWeight: 500,
+        minWidth: 90,
+        padding: "6px 16px",
+    },
 
 
 };
