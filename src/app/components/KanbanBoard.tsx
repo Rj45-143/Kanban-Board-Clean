@@ -60,7 +60,17 @@ export default function KanbanBoard() {
     }
   };
 
-
+  const saveHistoryLog = async (log: { username: string; action: string; timestamp: string; taskId?: string }) => {
+    try {
+      await fetch("/api/history", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(log),
+      });
+    } catch (err) {
+      console.error("Failed to save history log:", err);
+    }
+  };
 
   useEffect(() => {
     const init = async () => {
@@ -162,6 +172,17 @@ export default function KanbanBoard() {
     setAllTasks(updatedTasks);
     filterTasks(updatedTasks, userFilter || undefined);
     setNewTaskContent("");
+
+    
+    // 🔹 HISTORY LOG
+    const createLog = {
+      username,
+      action: `Created task "${newTaskContent}"`,
+      timestamp: new Date().toISOString(),
+      taskId: task.id
+    };
+    setHistoryLogs(prev => [createLog, ...prev]);
+    saveHistoryLog(createLog);
   };
 
   const updateTaskInDB = async (task: Task) => {
@@ -182,6 +203,16 @@ export default function KanbanBoard() {
     const updatedTasks = allTasks.filter(t => t.id !== taskId);
     setAllTasks(updatedTasks);
     filterTasks(updatedTasks, userFilter || undefined);
+
+    // 🔹 HISTORY LOG
+    const deleteLog = {
+      username: username || "Unknown",
+      action: `Deleted task "${allTasks.find(t => t.id === taskId)?.content}"`,
+      timestamp: new Date().toISOString(),
+      taskId
+    };
+    setHistoryLogs(prev => [deleteLog, ...prev]);
+    saveHistoryLog(deleteLog);
   };
 
   const onDragEnd = (result: DropResult) => {
@@ -255,14 +286,19 @@ export default function KanbanBoard() {
     updateTaskInDB(updatedTask);
 
     // 🔹 Update global history log
-    setHistoryLogs(prev => [
-      {
-        username: username || "Unknown",
-        action: formatHistoryAction(username || "Unknown", movedTask.username, movedTask.content, destination.droppableId),
-        timestamp: new Date().toISOString(),
-      },
-      ...prev
-    ]);
+    const newLog = {
+      username: username || "Unknown",
+      action: formatHistoryAction(username || "Unknown", movedTask.username, movedTask.content, destination.droppableId),
+      timestamp: new Date().toISOString(),
+      taskId: movedTask.id,
+    };
+
+    // update UI
+    setHistoryLogs(prev => [newLog, ...prev]);
+
+    // save to DB
+    saveHistoryLog(newLog);
+
   };
 
   const handleSaveEstimatedCompletion = (date: string) => {
@@ -385,16 +421,21 @@ export default function KanbanBoard() {
     updateTaskInDB(updatedTaskWithHistory);
 
     // 🔹 Update global history log with proper message
-    setHistoryLogs(prev => [
-      {
-        username,
-        action: updatedTask.username === username
-          ? `Edited your task "${updatedTask.content}"`
-          : `${username}: Edited ${updatedTask.username}'s task "${updatedTask.content}"`,
-        timestamp: new Date().toISOString()
-      },
-      ...prev
-    ]);
+    const editLog = {
+      username,
+      action: updatedTask.username === username
+        ? `Edited your task "${updatedTask.content}"`
+        : `${username}: Edited ${updatedTask.username}'s task "${updatedTask.content}"`,
+      timestamp: new Date().toISOString(),
+      taskId: updatedTask.id
+    };
+
+    // UI
+    setHistoryLogs(prev => [editLog, ...prev]);
+
+    // DB
+    saveHistoryLog(editLog);
+
 
     setEditModalOpen(false);
   };
@@ -449,14 +490,16 @@ export default function KanbanBoard() {
 
 
     // 🔹 Update global history log
-    setHistoryLogs(prev => [
-      {
-        username: username || "Unknown",
-        action: formatHistoryAction(username || "Unknown", task.username, task.content, destColumnId),
-        timestamp: new Date().toISOString()
-      },
-      ...prev
-    ]);
+    const menuLog = {
+      username: username || "Unknown",
+      action: formatHistoryAction(username || "Unknown", task.username, task.content, destColumnId),
+      timestamp: new Date().toISOString(),
+      taskId: task.id
+    };
+
+    setHistoryLogs(prev => [menuLog, ...prev]);
+    saveHistoryLog(menuLog);
+
 
 
     // 🔹 Update tasks & columns
