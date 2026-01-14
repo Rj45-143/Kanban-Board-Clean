@@ -54,11 +54,12 @@ export default function KanbanBoard() {
 
   const formatHistoryAction = (actionBy: string, taskOwner: string, taskContent: string, targetColumn: string) => {
     if (actionBy === taskOwner) {
-      return `${actionBy}: Moved your task "${taskContent}" to ${targetColumn}`;
+      return `Moved your task "${taskContent}" to ${targetColumn}`;
     } else {
       return `${actionBy}: Moved ${taskOwner}'s task "${taskContent}" to ${targetColumn}`;
     }
   };
+
 
   const saveHistoryLog = async (log: { username: string; action: string; timestamp: string; taskId?: string }) => {
     try {
@@ -222,83 +223,76 @@ export default function KanbanBoard() {
     if (source.droppableId === destination.droppableId && source.index === destination.index) return;
 
     const sourceCol = columns[source.droppableId as Column["id"]];
-    const destCol = columns[destination.droppableId as Column["id"]];
     const movedTask = sourceCol.tasks[source.index];
 
-    // Remove the task from the source column immediately for smoother UI
+    // Remove task from source column for smooth UI
     setColumns(prev => ({
       ...prev,
-      [sourceCol.id]: { ...prev[sourceCol.id], tasks: prev[sourceCol.id].tasks.filter(t => t.id !== movedTask.id) }
+      [sourceCol.id]: {
+        ...prev[sourceCol.id],
+        tasks: prev[sourceCol.id].tasks.filter(t => t.id !== movedTask.id),
+      },
     }));
 
-    // 🔹 CASE 1: Moving to To Do → reset inProgressAt & estimatedCompletion
-    if (destination.droppableId === "todo") {
-      const updatedTask: Task = {
-        ...movedTask,
-        column: "todo",
-        inProgressAt: undefined,
-        estimatedCompletion: undefined,
-        doneAt: undefined,
-        history: [
-          ...(movedTask.history || []),
-          {
-            username: username || "Unknown",
-            action: `Moved to To Do`,
-            timestamp: new Date().toISOString(),
-          },
-        ],
-      };
-
-      const updatedAllTasks = allTasks.map(t => t.id === movedTask.id ? updatedTask : t);
-      setAllTasks(updatedAllTasks);
-      filterTasks(updatedAllTasks, userFilter || undefined);
-      updateTaskInDB(updatedTask);
-      return;
-    }
-
-    // 🔹 CASE 2: Moving to In Progress → show modal if inProgressAt is not set
+    // CASE: Moving to In Progress but not yet started → show modal
     if (destination.droppableId === "inprogress" && !movedTask.inProgressAt) {
       setCurrentTask(movedTask);
       setCurrentDestColumnId(destination.droppableId as Column["id"]);
       setCurrentSourceIndex(source.index);
       setModalOpen(true);
-      return; // wait for modal to save
+      return; // wait for modal save
     }
 
-    // 🔹 CASE 3: Moving to Done or In Progress where inProgressAt already exists → just update
-    const updatedTask: Task = {
+    // Prepare updated task
+    let updatedTask: Task = {
       ...movedTask,
       column: destination.droppableId as Task["column"],
-      doneAt: destination.droppableId === "done" && !movedTask.doneAt ? new Date().toISOString() : movedTask.doneAt,
-      history: [
-        ...(movedTask.history || []),
-        {
-          username: username || "Unknown",
-          action: `Moved to ${destination.droppableId}`,
-          timestamp: new Date().toISOString(),
-        },
-      ],
+      doneAt:
+        destination.droppableId === "done" && !movedTask.doneAt
+          ? new Date().toISOString()
+          : movedTask.doneAt,
+      // TypeScript-safe: always an array
+      history: [...(movedTask.history ?? [])],
     };
 
-    const updatedAllTasks = allTasks.map(t => t.id === movedTask.id ? updatedTask : t);
+    // Reset inProgress & estimatedCompletion when moving back to To Do
+    if (destination.droppableId === "todo") {
+      updatedTask.inProgressAt = undefined;
+      updatedTask.estimatedCompletion = undefined;
+    }
+
+    // 🔹 Add move history safely
+    updatedTask.history = updatedTask.history ?? []; // double-safety for TS
+    const timestamp = new Date().toISOString();
+    const logAction = formatHistoryAction(
+      username || "Unknown",
+      movedTask.username,
+      movedTask.content,
+      destination.droppableId
+    );
+    updatedTask.history.push({
+      username: username || "Unknown",
+      action: logAction,
+      timestamp,
+    });
+
+    // 🔹 Update all tasks & columns
+    const updatedAllTasks = allTasks.map(t => (t.id === movedTask.id ? updatedTask : t));
     setAllTasks(updatedAllTasks);
     filterTasks(updatedAllTasks, userFilter || undefined);
+
+    // 🔹 Update task in DB
     updateTaskInDB(updatedTask);
 
     // 🔹 Update global history log
     const newLog = {
       username: username || "Unknown",
-      action: formatHistoryAction(username || "Unknown", movedTask.username, movedTask.content, destination.droppableId),
-      timestamp: new Date().toISOString(),
+      action: logAction,
+      timestamp,
       taskId: movedTask.id,
     };
-
-    // update UI
     setHistoryLogs(prev => [newLog, ...prev]);
-
-    // save to DB
     saveHistoryLog(newLog);
-
   };
 
   const handleSaveEstimatedCompletion = (date: string) => {
@@ -446,72 +440,79 @@ export default function KanbanBoard() {
     setTaskMenuOpen(taskMenuOpen === taskId ? null : taskId);
   };
 
-  const handleMoveTask = (task: Task, destColumnId: Column["id"]) => {
-    if (task.column === destColumnId) return;
+const handleMoveTask = (task: Task, destColumnId: Column["id"]) => {
+  if (task.column === destColumnId) return;
 
-    // Move to In Progress → modal if no inProgressAt
-    if (destColumnId === "inprogress" && !task.inProgressAt) {
-      setCurrentTask(task);
-      setCurrentDestColumnId(destColumnId);
+  // CASE: Moving to In Progress but not started → show modal
+  if (destColumnId === "inprogress" && !task.inProgressAt) {
+    setCurrentTask(task);
+    setCurrentDestColumnId(destColumnId);
 
-      const sourceIndex = columns[task.column].tasks.findIndex(t => t.id === task.id);
-      setCurrentSourceIndex(sourceIndex);
+    const sourceIndex = columns[task.column].tasks.findIndex(t => t.id === task.id);
+    setCurrentSourceIndex(sourceIndex);
 
-      setColumns(prev => ({
-        ...prev,
-        [task.column]: {
-          ...prev[task.column],
-          tasks: prev[task.column].tasks.filter(t => t.id !== task.id),
-        },
-      }));
+    setColumns(prev => ({
+      ...prev,
+      [task.column]: {
+        ...prev[task.column],
+        tasks: prev[task.column].tasks.filter(t => t.id !== task.id),
+      },
+    }));
 
-      setModalOpen(true);
-      setTaskMenuOpen(null);
-      return;
-    }
-
-    // Normal move → add history
-    const updatedTask: Task = {
-      ...task,
-      column: destColumnId,
-      // Reset inProgressAt & estimatedCompletion when moving back to To Do
-      inProgressAt: destColumnId === "inprogress" ? task.inProgressAt : undefined,
-      estimatedCompletion: destColumnId === "inprogress" ? task.estimatedCompletion : undefined,
-      doneAt: destColumnId === "done" && !task.doneAt ? new Date().toISOString() : task.doneAt,
-      history: [
-        ...(task.history || []),
-        {
-          username: username || "Unknown",
-          action: `Moved to ${destColumnId}`,
-          timestamp: new Date().toISOString()
-        }
-      ]
-    };
-
-
-    // 🔹 Update global history log
-    const menuLog = {
-      username: username || "Unknown",
-      action: formatHistoryAction(username || "Unknown", task.username, task.content, destColumnId),
-      timestamp: new Date().toISOString(),
-      taskId: task.id
-    };
-
-    setHistoryLogs(prev => [menuLog, ...prev]);
-    saveHistoryLog(menuLog);
-
-
-
-    // 🔹 Update tasks & columns
-    const updatedAllTasks = allTasks.map(t => t.id === task.id ? updatedTask : t);
-    setAllTasks(updatedAllTasks);
-    filterTasks(updatedAllTasks, userFilter || undefined);
-
-    // 🔹 Update DB
-    updateTaskInDB(updatedTask);
+    setModalOpen(true);
     setTaskMenuOpen(null);
+    return;
+  }
+
+  // 🔹 Prepare updated task safely
+  const timestamp = new Date().toISOString();
+  let updatedTask: Task = {
+    ...task,
+    column: destColumnId,
+    inProgressAt: destColumnId === "inprogress" ? task.inProgressAt : undefined,
+    estimatedCompletion: destColumnId === "inprogress" ? task.estimatedCompletion : undefined,
+    doneAt: destColumnId === "done" && !task.doneAt ? timestamp : task.doneAt,
+    history: [...(task.history ?? [])], // ✅ TypeScript-safe
   };
 
+  // 🔹 Double-safety for history before push
+  updatedTask.history = updatedTask.history ?? [];
+
+  // 🔹 Format action for global/user history
+  const logAction = formatHistoryAction(
+    username || "Unknown",
+    task.username,
+    task.content,
+    destColumnId
+  );
+
+  // 🔹 Push to task history
+  updatedTask.history.push({
+    username: username || "Unknown",
+    action: logAction,
+    timestamp,
+  });
+
+  // 🔹 Update all tasks & columns
+  const updatedAllTasks = allTasks.map(t => (t.id === task.id ? updatedTask : t));
+  setAllTasks(updatedAllTasks);
+  filterTasks(updatedAllTasks, userFilter || undefined);
+
+  // 🔹 Update DB
+  updateTaskInDB(updatedTask);
+
+  // 🔹 Update global history log
+  const menuLog = {
+    username: username || "Unknown",
+    action: logAction,
+    timestamp,
+    taskId: task.id,
+  };
+  setHistoryLogs(prev => [menuLog, ...prev]);
+  saveHistoryLog(menuLog);
+
+  setTaskMenuOpen(null);
+};
 
   return (
     <div style={styles.page}>
