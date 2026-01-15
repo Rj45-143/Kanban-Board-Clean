@@ -81,7 +81,7 @@ const containerStyle: React.CSSProperties = {
   margin: 0,
   padding: 0,
   backgroundColor: "#dbeafe", // light blue (Tailwind's sky-200)
-  backgroundImage: "none",     // remove the image
+  backgroundImage: "url('/login-bg.png')",     // remove the image
 };
 
 
