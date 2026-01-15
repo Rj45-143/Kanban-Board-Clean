@@ -1,4 +1,3 @@
-// src/app/api/logout/route.ts
 import { NextResponse } from "next/server";
 import { cookies, headers } from "next/headers";
 import { logAction } from "@/app/lib/audit";
@@ -11,7 +10,7 @@ export async function POST() {
 
   await logAction("Logout", cookieStore, headerStore, { username: user });
 
-  const res = NextResponse.redirect("/login");
+  const res = NextResponse.json({ success: true });
   res.cookies.set("auth", "", {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",

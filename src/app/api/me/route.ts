@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { cookies, headers } from "next/headers";
 import { logAction } from "@/app/lib/audit";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   const cookieStore = await cookies();
   const headerStore = await headers();

@@ -1,11 +1,7 @@
-// src/app/api/login/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { validateLogin } from "@/app/lib/auth";
 import { cookies, headers } from "next/headers";
+import { validateLogin } from "@/app/lib/auth";
 import { logAction } from "@/app/lib/audit";
-
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   const cookieStore = await cookies();
@@ -15,7 +11,7 @@ export async function POST(req: NextRequest) {
   const { username, password } = body;
 
   if (!validateLogin(username, password)) {
-    await logAction("Failed login attempt", cookieStore, headerStore, { username });
+    await logAction("Failed login attempt", cookieStore, headerStore, { attemptedUser: username });
     return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
   }
 
