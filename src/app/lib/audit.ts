@@ -4,7 +4,7 @@ import { cookies, headers } from "next/headers";
 export async function logAction(
   action: string,
   cookieStore: Awaited<ReturnType<typeof cookies>>,
-  headerStore: any, // ❌ Huwag mag-type annotate, TS will infer correctly
+  headerStore: Awaited<ReturnType<typeof headers>>,
   extraData?: Record<string, any>
 ) {
   const user = cookieStore.get("auth")?.value || "Unknown";

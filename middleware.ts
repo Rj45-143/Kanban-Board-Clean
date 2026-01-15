@@ -1,12 +1,10 @@
 // middleware.ts
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { cookies, headers } from "next/headers";
-import { logAction } from "@/app/lib/audit";
 
 const PUBLIC_PATHS = ["/login", "/api/login"];
 
-export async function middleware(req: NextRequest) {
+export function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname;
 
   // 🔹 Allow Next.js internals
@@ -28,13 +26,11 @@ export async function middleware(req: NextRequest) {
     return new NextResponse(null, { status: 404 });
   }
 
-  // 🔹 Check auth cookie
-  const cookieStore = await cookies();
-  const headerStore = await headers();
-  const auth = cookieStore.get("auth")?.value;
+  // 🔹 Check auth cookie from request
+  const auth = req.cookies.get("auth")?.value;
 
   if (!auth) {
-    await logAction("Unauthorized access attempt to " + path, cookieStore, headerStore);
+    // NOTE: logging must happen in API routes, not middleware
     // pretend app does not exist
     return new NextResponse(null, { status: 404 });
   }
