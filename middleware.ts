@@ -2,9 +2,10 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login", "/api/login"];
+const PUBLIC_PATHS = ["/login", "/api/login", "/favicon.ico"];
 
-export function middleware(req: NextRequest) {
+// Middleware function
+export async function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname;
 
   // 🔹 Allow Next.js internals
@@ -26,19 +27,19 @@ export function middleware(req: NextRequest) {
     return new NextResponse(null, { status: 404 });
   }
 
-  // 🔹 Check auth cookie from request
+  // 🔹 Check auth cookie
   const auth = req.cookies.get("auth")?.value;
 
+  // 🔹 No auth → redirect to login instead of 404
   if (!auth) {
-    // NOTE: logging must happen in API routes, not middleware
-    // pretend app does not exist
-    return new NextResponse(null, { status: 404 });
+    return NextResponse.redirect("/login");
   }
 
-  // 🔹 Passed all checks → allow access
+  // 🔹 Auth cookie exists → allow access
   return NextResponse.next();
 }
 
+// Apply middleware to all routes
 export const config = {
   matcher: "/:path*",
 };

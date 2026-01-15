@@ -1,36 +1,32 @@
-import { NextResponse } from "next/server";
+// src/app/api/login/route.ts
+import { NextRequest, NextResponse } from "next/server";
 import { validateLogin } from "@/app/lib/auth";
-import { logAction } from "@/app/lib/audit";
 import { cookies, headers } from "next/headers";
+import { logAction } from "@/app/lib/audit";
 
-export async function POST(req: Request) {
-  try {
-    const { username, password } = await req.json();
-    if (!username || !password) {
-      return NextResponse.json({ success: false, message: "Missing credentials" }, { status: 400 });
-    }
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
-    const isValid = validateLogin(username, password);
+export async function POST(req: NextRequest) {
+  const cookieStore = await cookies();
+  const headerStore = await headers();
 
-    const cookieStore = await cookies();
-    const headerStore = await headers();
-    await logAction("Login attempt", cookieStore, headerStore, { username, success: isValid });
+  const body = await req.json();
+  const { username, password } = body;
 
-    if (!isValid) {
-      return NextResponse.json({ success: false, message: "Invalid username or password" }, { status: 401 });
-    }
-
-    const response = NextResponse.json({ success: true });
-    response.cookies.set("auth", username, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      path: "/",
-      maxAge: 60 * 60 * 24,
-    });
-
-    return response;
-  } catch (err) {
-    console.error("Login error:", err);
-    return NextResponse.json({ success: false, message: "Server error" }, { status: 500 });
+  if (!validateLogin(username, password)) {
+    await logAction("Failed login attempt", cookieStore, headerStore, { username });
+    return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
   }
+
+  const res = NextResponse.json({ success: true });
+  res.cookies.set("auth", username, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 60 * 60 * 24, // 1 day
+  });
+
+  await logAction("Successful login", cookieStore, headerStore, { username });
+  return res;
 }
