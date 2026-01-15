@@ -18,6 +18,14 @@ interface Column {
   tasks: Task[];
 }
 
+// Frontend type for history logs
+interface HistoryLogUI {
+  username: string;
+  action: string;
+  timestamp: string;
+  taskId?: string;
+}
+
 const initialData: Record<Column["id"], Column> = {
   todo: { id: "todo", title: "To Do", tasks: [] },
   inprogress: { id: "inprogress", title: "In Progress", tasks: [] },
@@ -40,7 +48,7 @@ export default function KanbanBoard() {
   const [taskMenuOpen, setTaskMenuOpen] = useState<string | null>(null);
   const taskMenuRef = useRef<HTMLDivElement | null>(null);
   const taskBtnRef = useRef<HTMLButtonElement | null>(null);
-  const [historyLogs, setHistoryLogs] = useState<{ username: string; action: string; timestamp: string }[]>([]);
+  const [historyLogs, setHistoryLogs] = useState<HistoryLogUI[]>([]);
   const [historyFilterDate, setHistoryFilterDate] = useState<string>(""); // YYYY-MM-DD
   const [deleteHistoryModalOpen, setDeleteHistoryModalOpen] = useState(false);
   const [passcodeInput, setPasscodeInput] = useState("");
@@ -67,12 +75,18 @@ export default function KanbanBoard() {
       await fetch("/api/history", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(log),
+        body: JSON.stringify({
+          actionBy: log.username,
+          action: log.action,
+          taskId: log.taskId,
+          timestamp: log.timestamp
+        }),
       });
     } catch (err) {
       console.error("Failed to save history log:", err);
     }
   };
+
 
   useEffect(() => {
     if (deleteHistoryModalOpen) {
@@ -93,24 +107,30 @@ export default function KanbanBoard() {
       // Get all tasks
       const res = await fetch("/api/tasks");
       const tasks: Task[] = await res.json();
-      setAllTasks(tasks);
 
-      // Apply user filter
-      filterTasks(tasks, "");
+      // 🔹 normalize id (in case backend ever adds _id)
+      const normalizedTasks: Task[] = tasks.map(t => ({
+        ...t,
+        id: t.id || uuidv4(), // fallback just in case
+      }));
 
-      //  Combine all tasks' histories for global history log
-      const combinedHistory = tasks.flatMap(t =>
-        t.history?.map(h => ({
-          username: h.username,
-          action: h.action, // ` ("${t.content}")`, // show task content
-          timestamp: h.timestamp
-        })) || []
-      );
+      setAllTasks(normalizedTasks);
+      filterTasks(normalizedTasks, "");
 
-      // Sort latest first
-      combinedHistory.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
-      setHistoryLogs(combinedHistory);
+      // New code inside init()
+      try {
+        const historyRes = await fetch("/api/history");
+        if (historyRes.ok) {
+          const logs: HistoryLogUI[] = await historyRes.json();
+          setHistoryLogs(logs);
+        } else {
+          console.error("Failed to fetch history logs");
+        }
+      } catch (err) {
+        console.error("Error fetching history logs:", err);
+      }
+
     };
 
     init();
@@ -171,27 +191,28 @@ export default function KanbanBoard() {
       column: "todo",
     };
 
-    await fetch("/api/tasks", {
+    const res = await fetch("/api/tasks", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(task),
     });
 
-    const updatedTasks = [...allTasks, task];
+    const saved: Task = await res.json(); // backend returns full saved task
+    const updatedTasks = [...allTasks, saved];
     setAllTasks(updatedTasks);
     filterTasks(updatedTasks, userFilter || undefined);
     setNewTaskContent("");
 
-
-    // 🔹 HISTORY LOG
+    // 🔹 history log
     const createLog = {
       username,
-      action: `Created task "${newTaskContent}"`,
+      action: `Created task "${saved.content}"`,
       timestamp: new Date().toISOString(),
-      taskId: task.id
+      taskId: saved.id,
     };
     setHistoryLogs(prev => [createLog, ...prev]);
     saveHistoryLog(createLog);
+
   };
 
   const updateTaskInDB = async (task: Task) => {
@@ -213,12 +234,12 @@ export default function KanbanBoard() {
     setAllTasks(updatedTasks);
     filterTasks(updatedTasks, userFilter || undefined);
 
-    // 🔹 HISTORY LOG
+    // 🔹 history
     const deleteLog = {
       username: username || "Unknown",
       action: `Deleted task "${allTasks.find(t => t.id === taskId)?.content}"`,
       timestamp: new Date().toISOString(),
-      taskId
+      taskId,
     };
     setHistoryLogs(prev => [deleteLog, ...prev]);
     saveHistoryLog(deleteLog);
@@ -306,36 +327,52 @@ export default function KanbanBoard() {
   const handleSaveEstimatedCompletion = (date: string) => {
     if (!currentTask || !currentDestColumnId || currentSourceIndex === null) return;
 
-    const selected = new Date(date);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    selected.setHours(0, 0, 0, 0);
-
-    // 🔹 Prevent past dates
-    if (selected < today) {
-      setPopup({ message: "Estimated completion date cannot be in the past.", type: "error" });
-      return;
-    }
-
-    // 🔹 Prevent year longer than 4 digits
-    if (selected.getFullYear() > 9999) {
-      setPopup({ message: "Year cannot be more than 4 digits.", type: "error" });
-      return;
-    }
+    const timestamp = new Date().toISOString();
 
     const updatedTask: Task = {
       ...currentTask,
-      inProgressAt: new Date().toISOString(),
+      inProgressAt: timestamp,
       estimatedCompletion: date,
       column: currentDestColumnId,
+      history: [...(currentTask.history ?? [])],
     };
 
-    const updatedAllTasks = allTasks.map(t => t.id === updatedTask.id ? updatedTask : t);
+    // 🔹 Add history log
+    const logAction = formatHistoryAction(
+      username || "Unknown",
+      currentTask.username,
+      currentTask.content,
+      currentDestColumnId
+    );
+
+    updatedTask.history = updatedTask.history ?? [];
+    updatedTask.history.push({
+      username: username || "Unknown",
+      action: logAction,
+      timestamp,
+    });
+
+    const updatedAllTasks = allTasks.map(t => (t.id === updatedTask.id ? updatedTask : t));
     setAllTasks(updatedAllTasks);
     filterTasks(updatedAllTasks, userFilter || undefined);
     updateTaskInDB(updatedTask);
+
+    // 🔹 Update global history log
+    const newLog = {
+      username: username || "Unknown",
+      action: logAction,
+      timestamp,
+      taskId: updatedTask.id,
+    };
+    setHistoryLogs(prev => [newLog, ...prev]);
+    saveHistoryLog(newLog);
+
     setModalOpen(false);
+    setCurrentTask(null);
+    setCurrentSourceIndex(null);
+    setCurrentDestColumnId(null);
   };
+
 
   const handleExportCSV = () => {
     // CSV header

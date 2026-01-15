@@ -1,11 +1,15 @@
 export interface Task {
-  id: string;
+  id: string;       // DB id, used in all frontend ops
   content: string;
+  createdAt: string;
   username: string;
   column: "todo" | "inprogress" | "done";
-  createdAt: string;
   inProgressAt?: string;
   estimatedCompletion?: string;
   doneAt?: string;
-  history?: { username: string; action: string; timestamp: string }[];
+  history?: {
+    username: string;
+    action: string;
+    timestamp: string;
+  }[];
 }
