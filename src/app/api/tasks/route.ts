@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
   if (!user) return NextResponse.json([], { status: 401 });
 
   const client = await clientPromise;
-  const db = client.db("kanban");
+  const db = client.db("kanbanDB");
 
   const url = new URL(req.url);
   const filterUser = url.searchParams.get("user");
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
 
   const task = await req.json();
   const client = await clientPromise;
-  const db = client.db("kanban");
+  const db = client.db("kanbanDB");
 
   const newTask = { ...task, createdAt: new Date().toISOString() };
   await db.collection("tasks").insertOne(newTask);

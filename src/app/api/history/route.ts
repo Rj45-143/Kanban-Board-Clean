@@ -13,7 +13,7 @@ export async function GET() {
   if (!user) return NextResponse.json([], { status: 401 });
 
   const client = await clientPromise;
-  const db = client.db("kanban");
+  const db = client.db("kanbanDB");
 
   const logs = await db.collection("history_logs").find({}).sort({ timestamp: -1 }).limit(200).toArray();
   await logAction("Fetched history logs", cookieStore, headerStore);
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json();
   const client = await clientPromise;
-  const db = client.db("kanban");
+  const db = client.db("kanbanDB");
 
   await db.collection("history_logs").insertOne({
     taskId: body.taskId,
@@ -56,7 +56,7 @@ export async function DELETE(req: NextRequest) {
   }
 
   const client = await clientPromise;
-  const db = client.db("kanban");
+  const db = client.db("kanbanDB");
   await db.collection("history_logs").deleteMany({});
   await logAction("Cleared all history logs", cookieStore, headerStore);
   return NextResponse.json({ success: true, message: "History logs cleared!" });
