@@ -80,10 +80,8 @@ const containerStyle: React.CSSProperties = {
   alignItems: "center",
   margin: 0,
   padding: 0,
-  backgroundImage: `url(${process.env.NEXT_PUBLIC_BASE_URL || ''}/login-bg.png)`,
-  backgroundSize: "cover",
-  backgroundPosition: "center",
-  backgroundRepeat: "no-repeat",
+  backgroundColor: "#dbeafe", // light blue (Tailwind's sky-200)
+  backgroundImage: "none",     // remove the image
 };
 
 
