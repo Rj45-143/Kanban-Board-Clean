@@ -1,28 +1,35 @@
 import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/app/lib/mongodb";
+import { cookies, headers } from "next/headers";
+import { logAction } from "@/app/lib/audit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// GET → load all history
 export async function GET() {
+  const cookieStore = await cookies();
+  const headerStore = await headers();
+  const user = cookieStore.get("auth")?.value;
+  if (!user) {
+    await logAction("Unauthorized GET /history attempt", cookieStore, headerStore);
+    return NextResponse.json([], { status: 401 });
+  }
+
   const client = await clientPromise;
   const db = client.db("kanban");
 
-  const logs = await db
-    .collection("history_logs")
-    .find({})
-    .sort({ timestamp: -1 })
-    .limit(200)
-    .toArray();
-
+  const logs = await db.collection("history_logs").find({}).sort({ timestamp: -1 }).limit(200).toArray();
+  await logAction("Fetched history logs", cookieStore, headerStore);
   return NextResponse.json(logs);
 }
 
-// POST → save new history
 export async function POST(req: NextRequest) {
-  const body = await req.json();
+  const cookieStore = await cookies();
+  const headerStore = await headers();
+  const user = cookieStore.get("auth")?.value;
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const body = await req.json();
   const client = await clientPromise;
   const db = client.db("kanban");
 
@@ -32,34 +39,28 @@ export async function POST(req: NextRequest) {
     actionBy: body.actionBy,
     taskOwner: body.taskOwner,
     action: body.action,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 
+  await logAction("Created history log", cookieStore, headerStore, { taskId: body.taskId });
   return NextResponse.json({ success: true });
 }
 
-// DELETE → clear all history (passcode protected)
 export async function DELETE(req: NextRequest) {
-  try {
-    const body = await req.json();
-    const { passcode } = body;
+  const cookieStore = await cookies();
+  const headerStore = await headers();
+  const user = cookieStore.get("auth")?.value;
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    // 🔹 Server-only passcode (from .env.local)
-    if (passcode !== process.env.HISTORY_PASSCODE) {
-      return NextResponse.json(
-        { success: false, message: "Incorrect passcode" },
-        { status: 401 }
-      );
-    }
-
-    const client = await clientPromise;
-    const db = client.db("kanban");
-
-    await db.collection("history_logs").deleteMany({}); // delete all logs
-
-    return NextResponse.json({ success: true, message: "History logs cleared!" });
-  } catch (err) {
-    console.error("Failed to delete history:", err);
-    return NextResponse.json({ success: false, message: "Server error" }, { status: 500 });
+  const body = await req.json();
+  if (body.passcode !== process.env.HISTORY_PASSCODE) {
+    await logAction("Failed delete history attempt", cookieStore, headerStore);
+    return NextResponse.json({ success: false, message: "Incorrect passcode" }, { status: 401 });
   }
+
+  const client = await clientPromise;
+  const db = client.db("kanban");
+  await db.collection("history_logs").deleteMany({});
+  await logAction("Cleared all history logs", cookieStore, headerStore);
+  return NextResponse.json({ success: true, message: "History logs cleared!" });
 }

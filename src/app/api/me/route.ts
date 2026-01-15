@@ -1,13 +1,18 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
+import { logAction } from "@/app/lib/audit";
 
 export async function GET() {
-  const cookieStore = await cookies();   // 👈 await is required now
-  const user = cookieStore.get("auth");
+  const cookieStore = await cookies();
+  const headerStore = await headers();
+  const user = cookieStore.get("auth")?.value;
 
   if (!user) {
+    await logAction("Unauthorized /me access attempt", cookieStore, headerStore);
     return NextResponse.json({ user: null }, { status: 401 });
   }
 
-  return NextResponse.json({ user: user.value });
+  await logAction("Viewed own user info", cookieStore, headerStore);
+
+  return NextResponse.json({ user });
 }
