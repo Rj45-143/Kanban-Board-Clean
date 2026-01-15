@@ -80,7 +80,7 @@ const containerStyle: React.CSSProperties = {
   alignItems: "center",
   margin: 0,
   padding: 0,
-  backgroundImage: "url('/login-bg.png')",
+  backgroundImage: `url(${process.env.NEXT_PUBLIC_BASE_URL || ''}/login-bg.png)`,
   backgroundSize: "cover",
   backgroundPosition: "center",
   backgroundRepeat: "no-repeat",
