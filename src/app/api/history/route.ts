@@ -33,7 +33,7 @@ export async function GET() {
   const client = await clientPromise;
   const db = client.db("kanbanDB");
 
-  // 👇 Type the collection correctly
+  // Type the collection correctly
   const collection = db.collection<HistoryLogDB>("history_logs");
 
   const rawLogs = await collection
