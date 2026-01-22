@@ -20,10 +20,38 @@ export const styles: Record<string, CSSProperties> = {
     headerLeft: {
         display: "flex",
         flexDirection: "column",
-        gap: 8
+        gap: 8,
     },
 
-    title: { fontSize: 32, fontWeight: 700, color: "#1e3a8a" },
+    title: {
+        fontSize: 32,
+        fontWeight: 700,
+        color: "#1e3a8a",
+    },
+
+    logoRow: {
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        justifyContent: "flex-start", // siguradong left
+    },
+
+    logo: {
+        width: 56,
+        height: 56,
+        objectFit: "contain",
+        backgroundColor: "#ffffff",
+        borderRadius: 12, // round corners
+        padding: 2,
+        boxShadow: "0 4px 12px rgba(0,0,0,0.15)", // floating effect
+    },
+    // headerLeft: {
+    //     display: "flex",
+    //     flexDirection: "column",
+    //     gap: 8
+    // },
+
+    // title: { fontSize: 32, fontWeight: 700, color: "#1e3a8a" },
 
     filterUnderTitle: {
         display: "flex",
@@ -204,7 +232,7 @@ export const styles: Record<string, CSSProperties> = {
         fontSize: 14,
         lineHeight: "1.4em",
 
-        maxInlineSize: "38ch",    // THIS controls words per line
+        maxInlineSize: "64ch",    // THIS controls words per line
 
         display: "-webkit-box",
         WebkitBoxOrient: "vertical",
@@ -286,22 +314,22 @@ export const styles: Record<string, CSSProperties> = {
 
     historyContainer: {
         marginTop: 20,
-        padding: 8,           // 🔹 add padding
+        padding: 8,           //  add padding
         border: "3px solid #96a6c4",
         borderRadius: 8,
         backgroundColor: "#dfe3e9",
-        maxHeight: 300,       // 🔹 slightly taller
+        maxHeight: 300,       //  slightly taller
         overflowY: "auto",
         display: "flex",
         flexDirection: "column",
-        gap: 6,               // 🔹 space between header & list
+        gap: 6,               //  space between header & list
     },
 
     historyHeader: {
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
-        flexWrap: "wrap",           // 🔑 magic
+        flexWrap: "wrap",           // magic
         rowGap: 8,
         columnGap: 12,
         marginBottom: 12,

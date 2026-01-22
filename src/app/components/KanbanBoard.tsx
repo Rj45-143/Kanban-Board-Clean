@@ -607,8 +607,13 @@ export default function KanbanBoard() {
 
       <header style={styles.header}>
         <div style={styles.headerLeft}>
-          <h1 style={styles.title}>ARK I.T Solution's Kanban Board</h1>
-
+          <div style={styles.logoRow}>
+            <img src="/first-image.png" alt="Logo 1" style={styles.logo} />
+            <img src="/second-image.png" alt="Logo 2" style={styles.logo} />
+            <h1 style={styles.title}>
+              IPICK & IKOMYUT Kanban Board
+            </h1>
+          </div>
           {/* Filter under title */}
           <div style={styles.filterUnderTitle}>
             <label style={{ fontSize: 14 }}>Filter by user:</label>
